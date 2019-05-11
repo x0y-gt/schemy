@@ -1,7 +1,6 @@
 import click
-from schemy.schema import Schema
+from schemy.graphql.schema import Schema
 from schemy.cmd.sync import sync
-from schemy.utils.map_schema_types import map_schema_types
 
 from pprint import pprint
 
@@ -9,8 +8,8 @@ from pprint import pprint
 @sync.command()
 @click.pass_context
 def models(ctx):
-    schema = Schema(ctx.obj['schema_path']).load()
-    types = map_schema_types(schema)
+    schema = Schema(ctx.obj['schema_path'])
+    types = schema.map_types()
     pprint(types)
 
     #for name, model in types.items():
