@@ -12,6 +12,11 @@ setup(name='schemy',
       packages=find_packages(),
       install_requires=[
           'Click==7.0',
-          'GraphQL-core-next==1.0.3'
+          'GraphQL-core-next>=1.0.3'
       ],
+      extras_require={
+          'dev': [
+              'pytest>=4.4.2'
+          ]
+      }
 )
