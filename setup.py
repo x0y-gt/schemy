@@ -16,7 +16,10 @@ setup(name='schemy',
       ],
       extras_require={
           'dev': [
-              'pytest>=4.4.2'
+              'pytest>=4.4.2',
+              'pytest-runner'
           ]
-      }
+      },
+      setup_requires=["pytest-runner"],
+      tests_require=["pytest"]
 )
