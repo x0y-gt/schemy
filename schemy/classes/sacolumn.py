@@ -2,58 +2,83 @@ from schemy.classes.base import Base
 
 __ALL__ = ['SAColumn']
 
-COLUMN = "    {name} = Column({type}{key}{nullable})\n"
-RELATIONSHIP = "    {name} = relationship('{model}')"
+COLUMN = "    {name} = Column({type}{key}{nullable})\n{relationship}"
+RELATIONSHIP = "    {name} = relationship('{model}'{backref})\n"
 
 class SAColumn(Base):
     """SqlAlchemy column, it works like a leaf class, it renders a class property in this case a model class column"""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, type_:str):
         self.name = name
-        self.type = 'String'
-        if (name.lower()=='id'):
-            self.pk = True
-        else:
-            self.pk = False
-        self.fk = None
-        self.nullable = False
-        self.backref = ''
-        self.relationship = False
-
-    def set_nullable(self, nullable: bool = False):
-        self.nullable = nullable
-
-    def set_type(self, type_):
         self.type = type_
+        if (name.lower()=='id'):
+            self.__pk = True
+        else:
+            self.__pk = False
+        self.__fk = ''
+        self.__nullable = False
+        self.__backref = ''
+        self.__relationship = False
 
-    def set_fk(self, fk: bool = True):
-        self.fk = fk
+    @property
+    def nullable(self):
+        return self.__nullable
 
-    def set_backref(self, backref):
-        self.backref = backref
+    @nullable.setter
+    def nullable(self, nullable: bool = False):
+        self.__nullable = nullable
+        return self
 
-    def set_relationship(self, relationship: bool = True):
-        self.relationship = relationship
+    @property
+    def fk(self):
+        return self.__fk
+
+    @fk.setter
+    def fk(self, fk):
+        self.__fk = bool(fk)
+        return self
+
+    @property
+    def backref(self):
+        return self.__backref
+
+    @backref.setter
+    def backref(self, backref):
+        self.__backref = backref
+        return self
+
+    @property
+    def relationship(self):
+        return self.__relationship
+
+    @relationship.setter
+    def relationship(self, relationship):
+        self.__relationship = bool(relationship)
+        return self
 
     def render(self):
         code = ''
-        if self.relationship:
-            code = RELATIONSHIP.format(name=self.name, model=self.type+'Model')
+        # for many to one relationships
+        if self.__relationship:
+            code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref='')
         else:
-            key = nullable = ''
+            key = nullable = relationship = ''
+            type_ = self.type
 
-            if self.pk:
+            if self.__pk:
                 key = ', primary_key=True'
-            elif self.fk:
-                key = ', ForeignKey("%s")' % (self.fk.lower()+'.id')
+            # each foreign key must have its own relationship
+            elif self.__fk:
+                key = ', ForeignKey("%s")' % (self.type.lower()+'.id')
                 backref = ''
                 if self.backref:
-                    backref = ', back_populates="%s"' % self.backref
-                relationship = '    {field} = relationship("{model}"{backref})\n'.format(field=self.name, model=self.fk+'Model', backref=backref)
+                    backref = ', back_populates="%s"' % self.__backref
+                relationship = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
                 self.name += 'Id'
+                type_ = 'Integer'
 
-            if self.nullable:
+            if self.__nullable:
                 nullable = ', nullable=True'
-            code = COLUMN.format(name=self.name, type=self.type, key=key, nullable=nullable)
+            code = COLUMN.format(name=self.name, type=type_, key=key, nullable=nullable, relationship=relationship)
 
         return code
