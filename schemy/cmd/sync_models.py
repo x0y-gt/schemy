@@ -44,14 +44,30 @@ def models(ctx):
                 else:
                     link_model_name = '%s%s' % (o2, o1)
 
+                field = SAColumn(field_name, link_model_name)
+                field.relationship = True
+                field.backref = type_name.lower()
+                model.add_column(field)
+
+                # Create the link model
                 if link_model_name not in models:
                     link_model = Model(link_model_name)
-                    link_id1 = '%sId' % type_name.lower()
-                    link_id2 = '%sId' % rel_object_type.lower()
-                    link_model.add_column(Column(link_id1, 'Integer'))
-                    link_model.add_column(Column(link_id2, 'Integer'))
+
+                    link_id1 = Column(type_name.lower(), type_name)
+                    link_id1.pk = True
+                    link_id1.fk = '%s.id' % type_name.lower()
+                    link_id1.backref = field_name
+
+                    link_id2 = Column(rel_object_type.lower(), rel_object_type)
+                    link_id2.pk = True
+                    link_id2.fk = '%s.id' % rel_object_type.lower()
+                    link_id2.backref = rel_field_name
+
+                    link_model.add_column(link_id1)
+                    link_model.add_column(link_id2)
 
                     models[link_model_name] = link_model
+
             #one to many relationship, I'm the parent
             elif field_data['list']:
                 field = SAColumn(field_name, gql2alchemy(field_data['type']))
@@ -60,7 +76,7 @@ def models(ctx):
             #many to one relationship, I'm the child
             else:
                 field = SAColumn(field_name, gql2alchemy(field_data['type']))
-                field.fk = True
+                field.fk = '%s.id' % rel_object_type.lower()
                 field.backref = rel_field_name
                 model.add_column(field)
 

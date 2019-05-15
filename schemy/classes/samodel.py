@@ -10,6 +10,9 @@ __ALL__ = ['{name}Model']
 class {name}Model(Base, Model):
     __tablename__ = '{table}'\n
 {cols}
+    createdAt = Column(String, nullable=True)
+    updatedAt = Column(String, nullable=True)
+
 {rels}"""
 
 class SAModel(BaseModel):

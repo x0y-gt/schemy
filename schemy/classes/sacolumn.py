@@ -21,22 +21,20 @@ class SAColumn(Base):
         self.__relationship = False
 
     @property
-    def nullable(self):
-        return self.__nullable
+    def pk(self):
+        return self.__pk
 
-    @nullable.setter
-    def nullable(self, nullable: bool = False):
-        self.__nullable = nullable
-        return self
+    @pk.setter
+    def pk(self, pk):
+        self.__pk = bool(pk)
 
     @property
     def fk(self):
         return self.__fk
 
     @fk.setter
-    def fk(self, fk):
-        self.__fk = bool(fk)
-        return self
+    def fk(self, fk: str):
+        self.__fk = fk
 
     @property
     def backref(self):
@@ -45,7 +43,6 @@ class SAColumn(Base):
     @backref.setter
     def backref(self, backref):
         self.__backref = backref
-        return self
 
     @property
     def relationship(self):
@@ -54,24 +51,36 @@ class SAColumn(Base):
     @relationship.setter
     def relationship(self, relationship):
         self.__relationship = bool(relationship)
-        return self
+
+    @property
+    def nullable(self):
+        return self.__nullable
+
+    @nullable.setter
+    def nullable(self, nullable: bool = False):
+        self.__nullable = nullable
 
     def render(self):
         code = ''
         # for many to one relationships
         if self.__relationship:
-            code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref='')
+            backref = ''
+            if self.__backref:
+                backref = ', back_populates="%s"' % self.__backref
+            code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
         else:
             key = nullable = relationship = ''
             type_ = self.type
 
             if self.__pk:
                 key = ', primary_key=True'
+                type_ = 'Integer'
+
             # each foreign key must have its own relationship
-            elif self.__fk:
-                key = ', ForeignKey("%s")' % (self.type.lower()+'.id')
+            if self.__fk:
+                key += ', ForeignKey("%s")' % (self.__fk)
                 backref = ''
-                if self.backref:
+                if self.__backref:
                     backref = ', back_populates="%s"' % self.__backref
                 relationship = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
                 self.name += 'Id'
@@ -79,6 +88,7 @@ class SAColumn(Base):
 
             if self.__nullable:
                 nullable = ', nullable=True'
+
             code = COLUMN.format(name=self.name, type=type_, key=key, nullable=nullable, relationship=relationship)
 
         return code
