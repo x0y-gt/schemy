@@ -1,12 +1,12 @@
 import click
 from functools import reduce
+from schemy.config import MODELS_DIR
 from schemy.graphql.schema import Schema
 from schemy.graphql.types import gql2alchemy
 from schemy.cmd.sync import sync
 from schemy.classes.samodel import SAModel
 from schemy.classes.sacolumn import SAColumn
-
-from pprint import pprint
+from schemy.utils.storage import Storage
 
 @sync.command()
 @click.pass_context
@@ -47,9 +47,9 @@ def models(ctx):
                 field = SAColumn(field_name, link_model_name)
                 field.relationship = True
                 field.backref = type_name.lower()
-                model.add_column(field)
+                model.add_relationship(field)
 
-                # Create the link model
+                # Create the link model if not already created
                 if link_model_name not in models:
                     link_model = Model(link_model_name)
 
@@ -72,27 +72,19 @@ def models(ctx):
             elif field_data['list']:
                 field = SAColumn(field_name, gql2alchemy(field_data['type']))
                 field.relationship = True
-                model.add_column(field)
+                model.add_relationship(field)
+
             #many to one relationship, I'm the child
             else:
                 field = SAColumn(field_name, gql2alchemy(field_data['type']))
                 field.fk = '%s.id' % rel_object_type.lower()
                 field.backref = rel_field_name
-                model.add_column(field)
+                model.add_relationship(field)
 
         models[type_name] = model
 
-    # Render all models
-    for m in models.values(): print(m.render())
-
-    #for name, model in types.items():
-    #    filepath = ROOT_DIR + "/model/" + name.lower() + ".py"
-    #    if (os.path.isfile(filepath)):
-    #        click.echo("Omitting %s model, file already exists" % name)
-    #    else:
-    #        click.echo("Generating %s model class" % name)
-    #        _save_dotpy(
-    #            filepath,
-    #            model.render()
-    #        )
-
+    # Render all models and save them
+    for model in models.values():
+        with Storage(MODELS_DIR + '/' + model.name.lower() + '.py') as model_file:
+            model_file.content = model.render() #saving just when assigning the content
+        click.echo("Generating %s model class" % model.name)

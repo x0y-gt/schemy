@@ -24,8 +24,10 @@ class SAModel(BaseModel):
         imports = ['from api.model import Base, Model']
 
         cols = ''
+        types = []
         for col_name, col in self.cols.items():
             cols += col.render()
+            types.append(col.type)
 
         rels = ''
         if (len(self.rels)):
@@ -39,5 +41,5 @@ class SAModel(BaseModel):
             table=self.name.lower(),
             cols=cols,
             rels=rels,
-            imports="\n")
+            imports="\n".join(imports))
         return code
