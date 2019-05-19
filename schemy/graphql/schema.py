@@ -1,7 +1,7 @@
 from graphql import build_schema
 from schemy.config import ROOT_DIR
 from schemy.graphql.utils.map_schema_types import map_schema_types
-from pprint import pprint
+from schemy.graphql.utils.map_schema_queries import map_schema_queries
 
 __all__ = ['Schema']
 
@@ -26,8 +26,14 @@ class Schema:
 
         return self.schema
 
-    def map_types(self):
+    def map_types(self, ignore=['Query', 'Mutation']):
         if self.schema:
-            return map_schema_types(self.schema)
+            return map_schema_types(self.schema, ignore)
+        else:
+            raise TypeError('Schema is empty, you must load a valid schema')
+
+    def map_queries(self, base=['Query']):
+        if self.schema:
+            return map_schema_queries(self.schema, base)
         else:
             raise TypeError('Schema is empty, you must load a valid schema')

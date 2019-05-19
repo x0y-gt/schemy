@@ -3,17 +3,16 @@ from schemy.graphql.extend_definition import contains_non_null_type, contains_li
 
 __all__ = ['map_schema_types']
 
-def map_schema_types(schema):
+def map_schema_types(schema, ignore=['Query', 'Mutation']):
     """Iterate over a graphQl schema to get the schema types and its relations
 
     The process ignores the root types like Query and Mutation and the Scalar types"""
-    invalid_types = ['Query', 'Mutation']
     objects = dict()
     enums = dict()
     for type_name, type_obj in schema.type_map.items():
         # Iterating over all the items of the schema
         # Ignore internal types and root types
-        if (type_name[:2]!='__') and (type_name not in invalid_types):
+        if (type_name[:2]!='__') and (type_name not in ignore):
             # ENUM types
             if is_enum_type(type_obj):
                 enums[type_name] = [] # values
