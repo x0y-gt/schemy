@@ -32,7 +32,7 @@ class Schema:
         else:
             raise TypeError('Schema is empty, you must load a valid schema')
 
-    def map_queries(self, base=['Query']):
+    def map_queries(self, base='Query'):
         if self.schema:
             return map_schema_queries(self.schema, base)
         else:
