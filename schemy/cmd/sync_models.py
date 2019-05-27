@@ -1,18 +1,17 @@
 import click
 from functools import reduce
 from schemy.config import MODELS_DIR
-from schemy.graphql.schema import Schema
-from schemy.graphql.types import gql2alchemy
+from schemy.graphql import GraphQl
+from schemy.utils import gql2alchemy
 from schemy.cmd.sync import sync
-from schemy.classes.samodel import SAModel
-from schemy.classes.sacolumn import SAColumn
+from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
 @sync.command()
 @click.pass_context
 def models(ctx):
-    schema = Schema(ctx.obj['schema_path'])
-    types = schema.map_types()
+    gql = GraphQl(ctx.obj['schema_path'])
+    types = gql.map_types()
 
     #TODO to improve later to add the functionality to create different types of models
     Model = SAModel

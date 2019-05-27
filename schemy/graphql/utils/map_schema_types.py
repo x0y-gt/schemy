@@ -1,5 +1,5 @@
 from graphql import is_scalar_type, is_enum_type, is_object_type, get_named_type
-from schemy.graphql.extend_definition import contains_non_null_type, contains_list_type, get_list_type
+from schemy.graphql.type.definition import contains_non_null_type, contains_list_type, get_list_type
 
 __all__ = ['map_schema_types']
 

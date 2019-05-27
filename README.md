@@ -1,3 +1,3 @@
 # Schemy
 
-A tool to generate GraphQl APIs from a GraphQl Schema in python. It has its own server
+It is a Schema-Driven development tool to generate GraphQl APIs from a GraphQl Schema using python. It has its own server

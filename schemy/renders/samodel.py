@@ -1,5 +1,4 @@
-from schemy.classes.base import BaseModel
-from schemy.classes.sacolumn import SAColumn
+from schemy.renders import BaseModel, SAColumn
 
 __ALL__ = ['SAModel']
 

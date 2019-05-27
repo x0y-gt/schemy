@@ -1,21 +1,27 @@
+from os.path import abspath
+
 from graphql import build_schema
-from schemy.config import ROOT_DIR
-from schemy.graphql.utils.map_schema_types import map_schema_types
-from schemy.graphql.utils.map_schema_queries import map_schema_queries
 
-__all__ = ['Schema']
+from schemy.graphql.utils import map_schema_types, map_schema_queries
 
-class Schema:
-    def __init__(self, schema_path):
+__all__ = ['GraphQl']
+
+
+class GraphQl:
+    def __init__(self, sdl_path:str = None):
         self.sdl = None
         self.schema = None
-        self.sdl_path = ROOT_DIR + '/' + schema_path
-        self.load()
+        self.sdl_path = sdl_path
+        if self.sdl_path:
+            self.build()
 
-    def load(self):
+    def build(self, sdl_path=None):
         self.schema = None
+        if not sdl_path:
+            sdl_path = self.sdl_path
         try:
-            with open(self.sdl_path, 'r') as f:
+            filepath = abspath(sdl_path)
+            with open(filepath, 'r') as f:
                 self.sdl = f.read()
                 self.schema = build_schema(self.sdl)
                 f.close()

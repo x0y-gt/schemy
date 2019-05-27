@@ -1,4 +1,4 @@
-from schemy.classes.base import Base
+from schemy.renders import Base
 
 __ALL__ = ['SAColumn']
 
