@@ -1,9 +1,8 @@
 from graphql import get_named_type
 from schemy.graphql.utils.map_schema_types import map_schema_types
 
-from pprint import pprint
-
 __all__ = ["map_schema_resolvers"]
+
 
 def map_schema_queries(schema, base='Query'):
     """Returns a list that contains all the path queries from a base object like Query of Mutation
@@ -55,6 +54,6 @@ def _map_query_path(types, base_type, stack):
 def _get_args(fields, field):
     args = {}
     if field in fields and len(fields[field].args):
-        args = [{arg_name: get_named_type(arg.type).name} for arg_name, arg in fields[field].args.items()]
+        args = {arg_name: get_named_type(arg.type).name for arg_name, arg in fields[field].args.items()}
 
     return args
