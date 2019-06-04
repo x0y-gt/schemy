@@ -1,7 +1,7 @@
 import click
 
 @click.group()
-@click.option('-s', '--schema_path', default="example/schema.sdl", required=False, prompt='Path to schema', help='The relative path from the projects folder to schema.')
+@click.option('-s', '--schema_path', default="api/schema.sdl", required=False, prompt='Path to schema', help='The relative path from the projects folder to schema.')
 @click.pass_context
 def sync(ctx, schema_path):
     ctx.obj = {

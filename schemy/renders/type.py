@@ -20,14 +20,29 @@ class {name}(BaseType):
 
     def __init__(self, name):
         super(Type, self).__init__(name)
-        self.imports = ['from schemy.types import BaseType']
+        self.imports = ['from schemy import BaseType']
         self.methods = []
         self.datasource_name = name.title() + 'Model'
         self.imports.append('from api.models import ' + self.datasource_name)
 
     def add_method(self, method:TypeMethod):
-        self.methods.append(method)
+        """Adds a new method defined with the TypeMethod class"""
+        if method.parent == 'Query':
+            self.methods.insert(0, method)
+        else:
+            self.methods.append(method)
         return self
+
+    def add_import(self, module):
+        """Adds a new method defined with the TypeMethod class"""
+        self.imports.append(module)
+        return self
+
+    def get_method(self, name, parent):
+        """Returns the class of a method if it exists
+        It's identified by the name|parent pair"""
+        methods = [m for m in self.methods if name == m.name and parent == m.parent]
+        return methods[0] if methods else None
 
     def render(self):
         methods = ''
