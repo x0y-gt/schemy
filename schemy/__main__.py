@@ -1,6 +1,6 @@
 import sys
 import click
-# Remove schemy dir from sys path
+# Remove schemy dir from sys path, it interfere when loading graphql
 sys.path = [d for d in sys.path if d != 'schemy']
 
 @click.group()
