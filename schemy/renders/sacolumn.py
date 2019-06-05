@@ -78,7 +78,7 @@ class SAColumn(Base):
 
             # each foreign key must have its own relationship
             if self.__fk:
-                key += ', ForeignKey("%s")' % (self.__fk)
+                key = (', ForeignKey("%s")' % (self.__fk)) + key
                 backref = ''
                 if self.__backref:
                     backref = ', back_populates="%s"' % self.__backref
