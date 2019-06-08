@@ -12,10 +12,13 @@ setup(name='schemy',
       packages=find_packages(),
       install_requires=[
           'Click==7.0',
-          'GraphQL-core-next>=1.0.3'
+          'GraphQL-core-next>=1.0.3',
+          'SQLAlchemy==1.3.4',
+          'psycopg2-binary==2.8.2'
       ],
       extras_require={
           'dev': [
+              'alembic==1.0.10',
               'pytest>=4.4.2',
               'pytest-runner'
           ]
