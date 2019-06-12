@@ -1,5 +1,7 @@
-import click
 from functools import reduce
+
+import click
+
 from schemy.config import MODELS_DIR
 from schemy.graphql import GraphQl
 from schemy.utils import gql2alchemy
@@ -13,11 +15,13 @@ def models(ctx):
     gql = GraphQl(ctx.obj['schema_path'])
     types = gql.map_types()
 
-    #TODO to improve later to add the functionality to create different types of models
+    #TODO to improve later to add the functionality
+    #to create different types of models
     Model = SAModel
     Column = SAColumn
 
-    models = {}
+    datasources = {}
+    type_name = None
     for type_name, type_metadata in types['objects'].items():
         model = Model(type_name)
         # adding the columns for the model
@@ -29,19 +33,21 @@ def models(ctx):
         for field_name, field_data in type_metadata['relationship'].items():
             #look for the relationship on the other object
             rel_object_type = field_data['type']
+            func_filter_type = (lambda x, obj:
+                                obj[1]['type'] == type_name and obj or x)
             rel_field_name, rel_field_data = reduce(
-                lambda x, obj: obj[1]['type']==type_name and obj or x,
+                func_filter_type,
                 types['objects'][rel_object_type]['relationship'].items()
             )
 
             #many to many relationship, we need to create another model
             if field_data['list'] and rel_field_data['list']:
-                o1 = type_name.title()
-                o2 = rel_object_type.title()
-                if o1 <= o2:
-                    link_model_name = '%s%s' % (o1, o2)
+                type_1ft = type_name.title()
+                type_2nd = rel_object_type.title()
+                if type_1ft <= type_2nd:
+                    link_model_name = '%s%s' % (type_1ft, type_2nd)
                 else:
-                    link_model_name = '%s%s' % (o2, o1)
+                    link_model_name = '%s%s' % (type_2nd, type_1ft)
 
                 field = SAColumn(field_name, link_model_name)
                 field.relationship = True
@@ -49,7 +55,7 @@ def models(ctx):
                 model.add_relationship(field)
 
                 # Create the link model if not already created
-                if link_model_name not in models:
+                if link_model_name not in datasources:
                     link_model = Model(link_model_name)
 
                     link_id1 = Column(type_name.lower(), type_name)
@@ -65,7 +71,7 @@ def models(ctx):
                     link_model.add_column(link_id1)
                     link_model.add_column(link_id2)
 
-                    models[link_model_name] = link_model
+                    datasources[link_model_name] = link_model
 
             #one to many relationship, I'm the parent
             elif field_data['list']:
@@ -80,10 +86,10 @@ def models(ctx):
                 field.backref = rel_field_name
                 model.add_relationship(field)
 
-        models[type_name] = model
+        datasources[type_name] = model
 
     # Render all models and save them
-    for model in models.values():
-        with Storage(MODELS_DIR + '/' + model.name.lower() + '.py') as model_file:
-            model_file.content = model.render() #saving just when assigning the content
-        click.echo("Generating %s model class" % model.name)
+    for ds in datasources.values():
+        with Storage(MODELS_DIR + '/' + ds.name.lower() + '.py') as ds_file:
+            ds_file.content = ds.render() #auto saving
+        click.echo("Generating %s data source class" % ds.name)
