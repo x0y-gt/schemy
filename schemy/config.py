@@ -38,7 +38,21 @@ class Config(dict, metaclass=Singleton):
     def __getitem__(self, key):
         return self.__data[key]
 
+    def get(self, key, default=None):
+        """Fail safe method to get data
+
+        :key: the key of the value
+        """
+        return self.__data[key] if key in self.__data else default
+
     def __setitem__(self, key, value):
+        self.__data[key] = value
+
+    def set(self, key, value):
+        """Fail safe method to get data
+
+        :key: the key of the value
+        """
         self.__data[key] = value
 
     def __delitem__(self, key):
