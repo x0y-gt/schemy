@@ -5,7 +5,6 @@ from schemy.utils import Singleton
 
 
 class Datasource(metaclass=Singleton):
-    __data = dict()
 
     def __init__(self, db_connection):
         """This class is a global singleton to manage global settings
@@ -23,5 +22,6 @@ class Datasource(metaclass=Singleton):
             ))
         }
 
-    def get_session(self):
+    @property
+    def session(self):
         return self.__data['session']
