@@ -2,12 +2,13 @@ from functools import reduce
 
 import click
 
-from schemy.config import MODELS_DIR
 from schemy.graphql import GraphQl
 from schemy.utils import gql2alchemy
 from schemy.cmd.sync import sync
 from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
+
+import api.config as config
 
 @sync.command()
 @click.pass_context
@@ -57,6 +58,7 @@ def models(ctx):
                 # Create the link model if not already created
                 if link_model_name not in datasources:
                     link_model = Model(link_model_name)
+                    link_model.imports.append('from sqlalchemy.orm import relationship')
 
                     link_id1 = Column(type_name.lower(), type_name)
                     link_id1.pk = True
@@ -89,7 +91,9 @@ def models(ctx):
         datasources[type_name] = model
 
     # Render all models and save them
+    root_dir = config.get('APP_ROOT_DIR')
+    models_dir = config.get('APP_MODELS_DIR')
     for ds in datasources.values():
-        with Storage(MODELS_DIR + '/' + ds.name.lower() + '.py') as ds_file:
+        with Storage(root_dir + models_dir + '/' + ds.name.lower() + '.py') as ds_file:
             ds_file.content = ds.render() #auto saving
         click.echo("Generating %s data source class" % ds.name)

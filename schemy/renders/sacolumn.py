@@ -70,11 +70,10 @@ class SAColumn(Base):
             code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
         else:
             key = nullable = relationship = ''
-            type_ = self.type
 
             if self.__pk:
                 key = ', primary_key=True'
-                type_ = 'Integer'
+                self.type = 'Integer'
 
             # each foreign key must have its own relationship
             if self.__fk:
@@ -84,11 +83,11 @@ class SAColumn(Base):
                     backref = ', back_populates="%s"' % self.__backref
                 relationship = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
                 self.name += 'Id'
-                type_ = 'Integer'
+                self.type = 'Integer'
 
             if self.__nullable:
                 nullable = ', nullable=True'
 
-            code = COLUMN.format(name=self.name, type=type_, key=key, nullable=nullable, relationship=relationship)
+            code = COLUMN.format(name=self.name, type=self.type, key=key, nullable=nullable, relationship=relationship)
 
         return code
