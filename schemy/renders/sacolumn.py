@@ -70,6 +70,7 @@ class SAColumn(Base):
             code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
         else:
             key = nullable = relationship = ''
+            original_type = self.type
 
             if self.__pk:
                 key = ', primary_key=True'
@@ -81,7 +82,7 @@ class SAColumn(Base):
                 backref = ''
                 if self.__backref:
                     backref = ', back_populates="%s"' % self.__backref
-                relationship = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
+                relationship = RELATIONSHIP.format(name=self.name, model=original_type+'Model', backref=backref)
                 self.name += 'Id'
                 self.type = 'Integer'
 
