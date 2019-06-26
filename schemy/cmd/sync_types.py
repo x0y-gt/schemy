@@ -1,10 +1,11 @@
 import click
 
-from schemy.config import TYPES_DIR
 from schemy.graphql import GraphQl
 from schemy.cmd.sync import sync
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
+
+import api.config as config
 
 
 @sync.command()
@@ -49,8 +50,10 @@ There are 4 query types that each type can resolve:
             new_method.nullable = last_field['nullable']
             new_type.add_method(new_method)
 
+    root_dir = config.get('APP_ROOT_DIR')
+    types_dir = config.get('APP_TYPES_DIR')
     # Render all types and save them
     for t in types.values():
-        with Storage(TYPES_DIR + '/' + t.name.lower() + '.py') as type_file:
+        with Storage(root_dir + types_dir + '/' + t.name.lower() + '.py') as type_file:
             type_file.content = t.render() #saving just when assigning the content
         click.echo("Generating %s type class" % t.name)

@@ -10,4 +10,4 @@ def sync(ctx, schema_path):
 
 from schemy.cmd.sync_models import models
 from schemy.cmd.sync_types import types
-#from schemy.cmd.sync_resolvers import resolvers
+from schemy.cmd.sync_factories import factories
