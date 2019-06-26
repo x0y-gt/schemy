@@ -1,5 +1,5 @@
 import os
-ROOT_DIR = os.path.abspath(os.getcwd())
+ROOT_DIR = os.path.abspath(os.getcwd()) + '/'
 ROOT_PACKAGE = __package__
 
 from .config import config
