@@ -7,5 +7,6 @@ APP = {
     'ROOT_PACKAGE': ROOT_PACKAGE,
     'MODELS_DIR': ROOT_PACKAGE + '/model',
     'TYPES_DIR': ROOT_PACKAGE + '/type',
-    'FACTORIES_DIR': ROOT_PACKAGE + '/database/factories'
+    'FACTORIES_DIR': ROOT_PACKAGE + '/database/factories',
+    'SDL_PATH': ROOT_PACKAGE + '/schema.sdl',
 }

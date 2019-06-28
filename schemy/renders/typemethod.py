@@ -1,15 +1,14 @@
 from schemy.renders import Base
 
-from pprint import pprint
-
 __all__ = ['TypeMethod']
 
 
-class TypeMethod(Base):
-    """This class defines a method implementation for a type class"""
-    METHOD = """    def {name}({args}):{content}
+METHOD = """    def {name}(self, {args}):{content}
 
 """
+
+class TypeMethod(Base):
+    """This class defines a method implementation for a type class"""
 
     def __init__(self, name, Type):
         super(TypeMethod, self).__init__(name)
@@ -29,8 +28,8 @@ class TypeMethod(Base):
         code.insert(0, '"""This method is to return an element by Id')
         code.insert(1, 'the method is called from the root obj Query"""')
         args.insert(0, 'Query')
-        code.append('return query.get(Id)')
-        args.append('Id')
+        code.append('return query.get(id)')
+        args.append('id')
         return code, args
 
     def _render_with_args(self, code, args):
@@ -113,7 +112,7 @@ class TypeMethod(Base):
                 # for queries from another objs
                 code, args = self._render_other_parent(code, args)
 
-        return self.METHOD.format(
+        return METHOD.format(
             name= self._method_name,
             args= ', '.join(args),
             content= self.line_indentation + self.line_indentation.join(code)

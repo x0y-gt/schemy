@@ -5,7 +5,7 @@ from importlib import import_module
 def load_modules(modules_path):
     """It imports all the modules inside a path
     e.g.
-    this is usefull to pre-load all the models"""
+    usefull to pre-load all the modules in an __init__ file"""
     modules = []
     for module in glob.glob(modules_path):
         if isfile(module) and not module.endswith('__init__.py'):
