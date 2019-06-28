@@ -15,15 +15,16 @@ class {name}(BaseType):
 
     DATASOURCE = {datasource}
 
-{methods}
-"""
+{methods}"""
 
     def __init__(self, name):
         super(Type, self).__init__(name)
-        self.imports = ['from schemy import BaseType']
-        self.methods = []
         self.datasource_name = name.title() + 'Model'
-        self.imports.append('from api.models import ' + self.datasource_name)
+        self.imports = [
+            'from schemy import BaseType',
+            'from api.model import ' + self.datasource_name
+        ]
+        self.methods = []
 
     def add_method(self, method:TypeMethod):
         """Adds a new method defined with the TypeMethod class"""

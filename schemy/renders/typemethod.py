@@ -66,7 +66,7 @@ class TypeMethod(Base):
             code.pop(2) # remove default code getting the type query
             parent_datasource = parent.title() + 'Model'
             datasource_query = parent.lower() + '_query'
-            self.type.add_import('from api.models import ' + parent_datasource)
+            self.type.add_import('from api.model import ' + parent_datasource)
             code.append('{ds_query} = {ds}.query()'.format(
                 ds = parent_datasource,
                 ds_query = datasource_query
