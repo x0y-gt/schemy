@@ -24,7 +24,7 @@ class Schemy:
         self.graphql = None
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
-        self.resolver = (lambda s:\
+        self._resolver = (lambda s:\
                          lambda root, info, **args: s.resolve_type(root, info, **args)
                          )(self)
         self._types = {}
@@ -47,21 +47,29 @@ class Schemy:
 
         return self
 
+    def schema(self):
+        if self.graphql:
+            return self.graphql.schema
+        return None
+
+    def get_resolver(self):
+        return self._resolver
+
     #def handle(self, query: Query) -> Response:
-    def handle(self, query):
-        root = None
-        context = {}
-        variables = {}
-        result = graphql_sync(
-            self.graphql.schema,
-            query,
-            root,
-            context,
-            variables,
-            field_resolver=self.resolver
-        )
-        #middleware=[LogMiddleware('logware')])
-        return result
+    #def handle(self, query):
+    #    root = None
+    #    context = {}
+    #    variables = {}
+    #    result = graphql_sync(
+    #        self.graphql.schema,
+    #        query,
+    #        root,
+    #        context,
+    #        variables,
+    #        field_resolver=self.resolver
+    #    )
+    #    #middleware=[LogMiddleware('logware')])
+    #    return result
 
     def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
