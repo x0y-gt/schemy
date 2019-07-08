@@ -24,7 +24,7 @@ class Storage():
     @property
     def content(self):
         if not self.__readed:
-            self.__content = self.__file.readlines()
+            self.__content = self.__file.read()
             self.__readed = True
         return self.__content
 
