@@ -4,15 +4,16 @@ class Storage():
 
     """Docstring for Storage. """
 
-    def __init__(self, path):
+    def __init__(self, path, mode='w'):
         self.__path = path
+        self.__mode = mode
         self.__file = None
         self.__content = None
 
-    def open(self, path:str = ''):
+    def open(self, path: str = '', mode='w'):
         if not path:
             path = self.__path
-        self.__file = open(path, 'w')
+        self.__file = open(path, mode)
 
     def close(self):
         self.__file.close()
