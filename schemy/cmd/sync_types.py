@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from schemy.graphql import GraphQl
@@ -5,6 +7,8 @@ from schemy.cmd.main import main
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
 
+
+TYPES_DIR = 'type'
 
 @main.command()
 @click.pass_context
@@ -18,7 +22,10 @@ There are 4 query types that each type can resolve:
     - get a list of type from root
     - get a list of type from another type
     """
-    print(ctx)
+    if not ctx.obj['schema_path'] and not ctx.obj['project_path']:
+        click.echo('ERROR: this command must be executed from the root directory of a schemy API')
+        return 1
+
     gql = GraphQl(ctx.obj['schema_path'])
     queries = gql.map_queries()
 
@@ -49,10 +56,9 @@ There are 4 query types that each type can resolve:
             new_method.nullable = last_field['nullable']
             new_type.add_method(new_method)
 
-    root_dir = config.get('APP_ROOT_DIR')
-    types_dir = config.get('APP_TYPES_DIR')
+    types_dir = os.path.join(ctx.obj['project_path'], TYPES_DIR)
     # Render all types and save them
     for t in types.values():
-        with Storage(root_dir + types_dir + '/' + t.name.lower() + '.py') as type_file:
+        with Storage(os.path.join(types_dir, t.name.lower() + '.py'), 'w') as type_file:
             type_file.content = t.render() #saving just when assigning the content
         click.echo("Generating %s type class" % t.name)

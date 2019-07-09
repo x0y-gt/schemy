@@ -1,3 +1,4 @@
+import os
 from functools import reduce
 
 import click
@@ -9,9 +10,15 @@ from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
 
+MODELS_DIR = 'model'
+
 @main.command()
 @click.pass_context
 def sync_models(ctx):
+    if not ctx.obj['schema_path'] and not ctx.obj['project_path']:
+        click.echo('ERROR: this command must be executed from the root directory of a schemy API')
+        return 1
+
     gql = GraphQl(ctx.obj['schema_path'])
     types = gql.map_types()
 
@@ -90,9 +97,8 @@ def sync_models(ctx):
         datasources[type_name] = model
 
     # Render all models and save them
-    root_dir = config.get('APP_ROOT_DIR')
-    models_dir = config.get('APP_MODELS_DIR')
+    models_dir = os.path.join(ctx.obj['project_path'], MODELS_DIR)
     for ds in datasources.values():
-        with Storage(root_dir + models_dir + '/' + ds.name.lower() + '.py') as ds_file:
+        with Storage(os.path.join(models_dir, ds.name.lower() + '.py'), 'w') as ds_file:
             ds_file.content = ds.render() #auto saving
         click.echo("Generating %s data source class" % ds.name)
