@@ -1,16 +1,14 @@
 import click
 
 from schemy.graphql import GraphQl
-from schemy.cmd.sync import sync
+from schemy.cmd.main import main
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
 
-import api.config as config
 
-
-@sync.command()
+@main.command()
 @click.pass_context
-def types(ctx):
+def sync_types(ctx):
     """This command creates classes that represents GraphQl types
     each class has the necesarry methods to resolve the fields from
     the schema
@@ -20,6 +18,7 @@ There are 4 query types that each type can resolve:
     - get a list of type from root
     - get a list of type from another type
     """
+    print(ctx)
     gql = GraphQl(ctx.obj['schema_path'])
     queries = gql.map_queries()
 

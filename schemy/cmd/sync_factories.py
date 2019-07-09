@@ -3,17 +3,15 @@ from functools import reduce
 
 import click
 from schemy.graphql import GraphQl
-from schemy.cmd.sync import sync
+from schemy.cmd.main import main
 from schemy.renders import Factory
 from schemy.renders import FactoryColumn
 from schemy.utils.storage import Storage
 
-import api.config as config
 
-
-@sync.command()
+@main.command()
 @click.pass_context
-def factories(ctx):
+def sync_factories(ctx):
     gql = GraphQl(ctx.obj['schema_path'])
     types = gql.map_types()
 

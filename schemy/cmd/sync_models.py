@@ -4,15 +4,14 @@ import click
 
 from schemy.graphql import GraphQl
 from schemy.utils import gql2alchemy
-from schemy.cmd.sync import sync
+from schemy.cmd.main import main
 from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
-import api.config as config
 
-@sync.command()
+@main.command()
 @click.pass_context
-def models(ctx):
+def sync_models(ctx):
     gql = GraphQl(ctx.obj['schema_path'])
     types = gql.map_types()
 
