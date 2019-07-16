@@ -1,11 +1,25 @@
+import os
+import importlib.util
+
 import click
 
-from api.database.factories import seed as seed_api
+from schemy.cmd.main import main
 
-from schemy.cmd.sync import sync
 
-@sync.command()
+@main.command()
 @click.pass_context
 def seed(ctx):
-    click.echo('Seeding database')
-    seed_api()
+    if not ctx.obj['schema_path'] and not ctx.obj['project_path']:
+        click.echo('ERROR: this command must be executed from the root directory of a schemy API')
+        return 1
+
+    module_path = os.path.join(ctx.obj['project_path'], 'database', 'factories', 'seed.py')
+    spec = importlib.util.spec_from_file_location("seed", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if hasattr(module, 'seed'):
+        seed = getattr(module, 'seed')
+        click.echo('Seeding database with random data')
+        seed()
+    else:
+        click.echo('ERROR: seed module does not exists in factories')

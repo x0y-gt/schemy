@@ -1,6 +1,6 @@
 """Module to define the global setting of the API"""
-from api import ROOT_DIR
-from api import ROOT_PACKAGE
+from {project_name} import ROOT_DIR
+from {project_name} import ROOT_PACKAGE
 
 APP = {
     'ROOT_DIR': ROOT_DIR,

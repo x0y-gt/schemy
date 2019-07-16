@@ -1,7 +1,7 @@
 import inspect
 
 from sqlalchemy.ext.declarative import declarative_base
-import api.config as config
+import {project_name}.config as config
 
 from schemy.datasource import Datasource
 from schemy.utils import load_modules
