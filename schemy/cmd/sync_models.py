@@ -100,5 +100,5 @@ def sync_models(ctx):
     models_dir = os.path.join(ctx.obj['project_path'], MODELS_DIR)
     for ds in datasources.values():
         with Storage(os.path.join(models_dir, ds.name.lower() + '.py'), 'w') as ds_file:
-            ds_file.content = ds.render() #auto saving
+            ds_file.content = ds.render(package_name=ctx.obj['project_name']) #auto saving
         click.echo("Generating %s data source class" % ds.name)

@@ -65,20 +65,20 @@ class TypeMethod(Base):
             code.pop(2) # remove default code getting the type query
             parent_datasource = parent.title() + 'Model'
             datasource_query = parent.lower() + '_query'
-            self.type.add_import('from api.model import ' + parent_datasource)
+            self.type.add_import('from PACKAGE_NAME.model import ' + parent_datasource)
             code.append('{ds_query} = {ds}.query()'.format(
-                ds = parent_datasource,
-                ds_query = datasource_query
+                ds=parent_datasource,
+                ds_query=datasource_query
             ))
             code.append('{parent_obj} = {ds_query}.get({parent}.id)'\
                         .format(
-                            parent_obj = parent.lower(),
-                            ds_query = datasource_query,
-                            parent = parent
+                            parent_obj=parent.lower(),
+                            ds_query=datasource_query,
+                            parent=parent
                         ))
             code.append('return {parent_obj}.{field}'.format(
-                parent_obj = parent.lower(),
-                field = self.name
+                parent_obj=parent.lower(),
+                field=self.name
             ))
         elif self.list:
             # for one to many relationships

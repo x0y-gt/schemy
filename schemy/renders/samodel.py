@@ -19,10 +19,10 @@ class SAModel(BaseDatasource):
     def __init__(self, name):
         super(SAModel, self).__init__(name)
         self.imports = [
-            'from api.model import Base',
+            'from PACKAGE_NAME.model import Base',
         ]
 
-    def render(self):
+    def render(self, package_name='api'):
         cols = ''
         types = ['String']
         for col_name, col in self.cols.items():
@@ -43,4 +43,5 @@ class SAModel(BaseDatasource):
             cols=cols,
             rels=rels,
             imports="\n".join(self.imports))
+        code = code.replace('PACKAGE_NAME', package_name)
         return code

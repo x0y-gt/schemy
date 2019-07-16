@@ -21,11 +21,10 @@ def main(ctx):
     if os.path.isfile(setup_path):
         name = package_name(setup_path)
         project_path = os.path.join(os.getcwd(), name)
-        project_name = name
         schema_path = os.path.join(project_path, 'schema.sdl')
         if os.path.isfile(schema_path):
             ctx.obj['project_path'] = project_path
             ctx.obj['schema_path'] = schema_path
-            ctx.obj['project_name'] = project_name
+            ctx.obj['project_name'] = name
 
     click.echo('Schemy executing...')

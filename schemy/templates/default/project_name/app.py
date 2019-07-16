@@ -3,7 +3,7 @@ from aiohttp_graphql import GraphQLView
 from schemy import Schemy
 
 from {project_name} import config
-from {project_name} import datasource
+from {project_name}.model import datasource
 
 
 def bootstrap_schemy():

@@ -5,6 +5,7 @@ import click
 
 from schemy.cmd.main import main
 
+
 @main.command()
 @click.pass_context
 def seed(ctx):
@@ -16,7 +17,9 @@ def seed(ctx):
     spec = importlib.util.spec_from_file_location("seed", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    print(dir(module))
-
-    click.echo('Seeding database')
-    #seed_api()
+    if hasattr(module, 'seed'):
+        seed = getattr(module, 'seed')
+        click.echo('Seeding database with random data')
+        seed()
+    else:
+        click.echo('ERROR: seed module does not exists in factories')

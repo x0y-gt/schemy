@@ -123,13 +123,13 @@ def sync_factories(ctx):
     # Render all models and save them
     for f in factories.values():
         with Storage(os.path.join(factories_dir, f.name.lower() + '.py'), 'w') as f_file:
-            f_file.content = f.render() #auto saving
+            f_file.content = f.render(project_name=ctx.obj['project_name']) #auto saving
         click.echo("Generating %s data source class" % f.name)
 
-    code.insert(0, 'from api.model import datasource')
+    code.insert(0, 'from PACKAGE_NAME.model import datasource')
     code.insert(0, 'from random import randint')
     code.append("\nif __name__ == '__main__':")
     code.append("    seed()")
     with Storage(os.path.join(factories_dir, 'seed.py'), 'w') as f_main:
-        f_main.content = '\n'.join(code)
+        f_main.content = '\n'.join(code).replace('PACKAGE_NAME', ctx.obj['project_name'])
     click.echo("Updating seed command")

@@ -22,14 +22,14 @@ class Factory(BaseDatasource):
     def __init__(self, name):
         super(Factory, self).__init__(name)
 
-    def render(self):
+    def render(self, project_name='api'):
         imports = [
             'from datetime import datetime',
             'from random import randint',
             'import factory',
-            'from api.model import datasource',
+            'from PACKAGE_NAME.model import datasource',
         ]
-        imports.append('from api.model import {name}Model'.format(
+        imports.append('from PACKAGE_NAME.model import {name}Model'.format(
             name=self.name
         ))
 
@@ -58,4 +58,5 @@ class Factory(BaseDatasource):
             cols=cols,
             rels=rels,
             imports="\n".join(imports))
+        code = code.replace('PACKAGE_NAME', project_name)
         return code

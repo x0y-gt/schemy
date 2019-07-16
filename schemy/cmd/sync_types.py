@@ -40,11 +40,12 @@ There are 4 query types that each type can resolve:
 
         method_name = last_field['field']
         relationship = False
-        if not len(query):
+        if not query:
             method_parent = 'Query'
         else:
             method_parent = query[-1]['type']
-            relationship = True if query[-1]['list'] and last_field['list'] else False
+            #relationship = True if query[-1]['list'] and last_field['list'] else False
+            relationship = bool(query[-1]['list'] and last_field['list'])
 
         # create the method if the tuple parent, name doesn't exist
         if not new_type.get_method(method_name, method_parent):
@@ -60,5 +61,5 @@ There are 4 query types that each type can resolve:
     # Render all types and save them
     for t in types.values():
         with Storage(os.path.join(types_dir, t.name.lower() + '.py'), 'w') as type_file:
-            type_file.content = t.render() #saving just when assigning the content
+            type_file.content = t.render(package_name=ctx.obj['project_name']) #auto saving
         click.echo("Generating %s type class" % t.name)

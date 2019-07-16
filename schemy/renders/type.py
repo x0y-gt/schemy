@@ -22,7 +22,7 @@ class {name}(BaseType):
         self.datasource_name = name.title() + 'Model'
         self.imports = [
             'from schemy import BaseType',
-            'from api.model import ' + self.datasource_name
+            'from PACKAGE_NAME.model import ' + self.datasource_name
         ]
         self.methods = []
 
@@ -45,15 +45,17 @@ class {name}(BaseType):
         methods = [m for m in self.methods if name == m.name and parent == m.parent]
         return methods[0] if methods else None
 
-    def render(self):
+    def render(self, package_name='api'):
         methods = ''
 
-        for m in self.methods:
-            methods += m.render()
+        for method in self.methods:
+            methods += method.render()
 
-        return self.CLASS.format(
-                imports='\n'.join(self.imports),
-                name=self.name,
-                datasource=self.datasource_name,
-                methods= methods
-            )
+        code = self.CLASS.format(
+            imports='\n'.join(self.imports),
+            name=self.name,
+            datasource=self.datasource_name,
+            methods= methods
+        )
+        code = code.replace('PACKAGE_NAME', package_name)
+        return code
