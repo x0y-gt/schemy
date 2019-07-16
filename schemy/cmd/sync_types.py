@@ -1,16 +1,18 @@
+import os
+
 import click
 
 from schemy.graphql import GraphQl
-from schemy.cmd.sync import sync
+from schemy.cmd.main import main
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
 
-import api.config as config
 
+TYPES_DIR = 'type'
 
-@sync.command()
+@main.command()
 @click.pass_context
-def types(ctx):
+def sync_types(ctx):
     """This command creates classes that represents GraphQl types
     each class has the necesarry methods to resolve the fields from
     the schema
@@ -20,6 +22,10 @@ There are 4 query types that each type can resolve:
     - get a list of type from root
     - get a list of type from another type
     """
+    if not ctx.obj['schema_path'] and not ctx.obj['project_path']:
+        click.echo('ERROR: this command must be executed from the root directory of a schemy API')
+        return 1
+
     gql = GraphQl(ctx.obj['schema_path'])
     queries = gql.map_queries()
 
@@ -34,11 +40,12 @@ There are 4 query types that each type can resolve:
 
         method_name = last_field['field']
         relationship = False
-        if not len(query):
+        if not query:
             method_parent = 'Query'
         else:
             method_parent = query[-1]['type']
-            relationship = True if query[-1]['list'] and last_field['list'] else False
+            #relationship = True if query[-1]['list'] and last_field['list'] else False
+            relationship = bool(query[-1]['list'] and last_field['list'])
 
         # create the method if the tuple parent, name doesn't exist
         if not new_type.get_method(method_name, method_parent):
@@ -50,10 +57,9 @@ There are 4 query types that each type can resolve:
             new_method.nullable = last_field['nullable']
             new_type.add_method(new_method)
 
-    root_dir = config.get('APP_ROOT_DIR')
-    types_dir = config.get('APP_TYPES_DIR')
+    types_dir = os.path.join(ctx.obj['project_path'], TYPES_DIR)
     # Render all types and save them
     for t in types.values():
-        with Storage(root_dir + types_dir + '/' + t.name.lower() + '.py') as type_file:
-            type_file.content = t.render() #saving just when assigning the content
+        with Storage(os.path.join(types_dir, t.name.lower() + '.py'), 'w') as type_file:
+            type_file.content = t.render(package_name=ctx.obj['project_name']) #auto saving
         click.echo("Generating %s type class" % t.name)

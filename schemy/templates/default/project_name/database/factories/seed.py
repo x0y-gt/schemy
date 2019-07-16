@@ -1,3 +1,5 @@
+from {project_name}.model import datasource
+
 def seed():
     pass
 

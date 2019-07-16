@@ -1,25 +1,31 @@
+import os
 import inspect
 from functools import reduce
 
 import click
+
 from schemy.graphql import GraphQl
-from schemy.cmd.sync import sync
+from schemy.cmd.main import main
 from schemy.renders import Factory
 from schemy.renders import FactoryColumn
 from schemy.utils.storage import Storage
 
-import api.config as config
 
+FACTORIES_DIR = 'database/factories'
 
-@sync.command()
+@main.command()
 @click.pass_context
-def factories(ctx):
+def sync_factories(ctx):
+    if not ctx.obj['schema_path'] and not ctx.obj['project_path']:
+        click.echo('ERROR: this command must be executed from the root directory of a schemy API')
+        return 1
+
     gql = GraphQl(ctx.obj['schema_path'])
     types = gql.map_types()
 
     factories = {}
     type_name = None
-    factories_dir = config.get('APP_FACTORIES_DIR')
+    factories_dir = os.path.join(ctx.obj['project_path'], FACTORIES_DIR)
     factories_base = factories_dir.replace('/', '.')
     code = ['\ndef seed():']
     for type_name, type_metadata in types['objects'].items():
@@ -115,16 +121,15 @@ def factories(ctx):
             code.append('    datasource.session.commit()')
 
     # Render all models and save them
-    root_dir = config.get('APP_ROOT_DIR')
     for f in factories.values():
-        with Storage(root_dir + factories_dir + '/' + f.name.lower() + '.py') as f_file:
-            f_file.content = f.render() #auto saving
+        with Storage(os.path.join(factories_dir, f.name.lower() + '.py'), 'w') as f_file:
+            f_file.content = f.render(project_name=ctx.obj['project_name']) #auto saving
         click.echo("Generating %s data source class" % f.name)
 
-    code.insert(0, 'from api.model import datasource')
+    code.insert(0, 'from PACKAGE_NAME.model import datasource')
     code.insert(0, 'from random import randint')
     code.append("\nif __name__ == '__main__':")
     code.append("    seed()")
-    with Storage(root_dir + factories_dir + '/seed.py') as f_main:
-        f_main.content = '\n'.join(code)
+    with Storage(os.path.join(factories_dir, 'seed.py'), 'w') as f_main:
+        f_main.content = '\n'.join(code).replace('PACKAGE_NAME', ctx.obj['project_name'])
     click.echo("Updating seed command")
