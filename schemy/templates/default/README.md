@@ -4,8 +4,20 @@ It is a Schema-Driven development tool to generate GraphQl APIs from a GraphQl S
 
 ## Install
 
-`command to install`
+`schemy new-project NAME`
 
+## Bootstraping A Project
+
+After checking database config
+
+```
+schemy sync-models
+schemy sync-types
+python setup.py develop ???
+alembic revision --autogenerate -m "init"
+alembic upgrade head
+schemy seed
+```
 ## Running
 
 `python api/app.py`
