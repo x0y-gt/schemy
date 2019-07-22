@@ -83,13 +83,13 @@ def sync_models(ctx):
 
             #one to many relationship, I'm the parent
             elif field_data['list']:
-                field = SAColumn(field_name, gql2alchemy(field_data['type']))
+                field = SAColumn(field_name, field_data['type'])
                 field.relationship = True
                 model.add_relationship(field)
 
             #many to one relationship, I'm the child
             else:
-                field = SAColumn(field_name, gql2alchemy(field_data['type']))
+                field = SAColumn(field_name, field_data['type'])
                 field.fk = '%s.id' % rel_object_type.lower()
                 field.backref = rel_field_name
                 model.add_relationship(field)
