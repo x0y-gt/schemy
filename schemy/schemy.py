@@ -9,8 +9,6 @@ from schemy.graphql import GraphQl
 from schemy.utils import load_modules
 from schemy.type import BaseType
 
-from pprint import pprint
-
 
 class Schemy:
     """This is the framework's main class.

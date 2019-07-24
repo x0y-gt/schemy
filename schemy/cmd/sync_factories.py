@@ -26,13 +26,13 @@ def sync_factories(ctx):
     factories = {}
     type_name = None
     factories_dir = os.path.join(ctx.obj['project_path'], FACTORIES_DIR)
-    factories_base = factories_dir.replace('/', '.')
+    factories_base = ctx.obj['project_name'] + '.database.factories'
     code = ['\ndef seed():']
     for type_name, type_metadata in types['objects'].items():
         factory = Factory(type_name)
         # adding columns definitions
         for field_name, field_data in type_metadata['field'].items():
-            field = FactoryColumn(field_name)
+            field = FactoryColumn(field_name, field_data['type'])
             factory.add_column(field)
 
         # adding the relationships to the factory
@@ -82,7 +82,7 @@ def sync_factories(ctx):
                     link_factory.add_column(link_2)
 
                     factories[link_factory_name] = link_factory
-                    code.append("    from .{name} import {factory}Factory".format(
+                    code.append("    from PACKAGE_NAME.database.factories.{name} import {factory}Factory".format(
                         name=link_factory_name.lower(),
                         factory=link_factory_name
                     ))
@@ -111,9 +111,9 @@ def sync_factories(ctx):
         factories[type_name] = factory
         # Call the factories if they're not related by many to many
         if not many_to_many:
-            code.append("    from .{name} import {factory}Factory".format(
+            code.append("    from PACKAGE_NAME.database.factories.{name} import {factory}Factory".format(
                 name=type_name.lower(),
-                factory=type_name.title()
+                factory=type_name
             ))
             code.append("    {name}Factory.create_batch(randint(0,3))".format(
                 name=type_name

@@ -19,7 +19,7 @@ class {name}(BaseType):
 
     def __init__(self, name):
         super(Type, self).__init__(name)
-        self.datasource_name = name.title() + 'Model'
+        self.datasource_name = name + 'Model'
         self.imports = [
             'from schemy import BaseType',
             'from PACKAGE_NAME.model import ' + self.datasource_name
