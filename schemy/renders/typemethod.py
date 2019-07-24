@@ -57,13 +57,13 @@ class TypeMethod(Base):
                             .format(name=self.parent.lower())
         code.insert(0, '"""This method is to return elements related')
         code.insert(1, 'with the type {parent}"""'.format(parent=self.parent))
-        parent = self.parent.title()
+        parent = self.parent
         args.insert(0, parent)
 
         if self.relationship:
             # for many to many relationships
             code.pop(2) # remove default code getting the type query
-            parent_datasource = parent.title() + 'Model'
+            parent_datasource = parent + 'Model'
             datasource_query = parent.lower() + '_query'
             self.type.add_import('from PACKAGE_NAME.model import ' + parent_datasource)
             code.append('{ds_query} = {ds}.query()'.format(
@@ -113,7 +113,7 @@ class TypeMethod(Base):
                 code, args = self._render_other_parent(code, args)
 
         return METHOD.format(
-            name= self._method_name,
-            args= ', '.join(args),
-            content= self.line_indentation + self.line_indentation.join(code)
+            name=self._method_name,
+            args=', '.join(args),
+            content=self.line_indentation + self.line_indentation.join(code)
         )
