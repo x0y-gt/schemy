@@ -42,10 +42,16 @@ def sync_models(ctx):
             rel_object_type = field_data['type']
             func_filter_type = (lambda x, obj:
                                 obj[1]['type'] == type_name and obj or x)
-            rel_field_name, rel_field_data = reduce(
-                func_filter_type,
-                types['objects'][rel_object_type]['relationship'].items()
-            )
+            #We can't generate models if the objects doesn't have a reference to each other
+            try:
+                rel_field_name, rel_field_data = reduce(
+                    func_filter_type,
+                    types['objects'][rel_object_type]['relationship'].items()
+                )
+            except TypeError:
+                click.echo('ABORTING: Missing reference to type {} from type {}'
+                           .format(type_name, rel_object_type))
+                return 1
 
             #many to many relationship, we need to create another model
             if field_data['list'] and rel_field_data['list']:
