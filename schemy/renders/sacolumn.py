@@ -3,7 +3,7 @@ from schemy.renders import Base
 __ALL__ = ['SAColumn']
 
 COLUMN = "    {name} = Column({type}{key}{nullable})\n{relationship}"
-RELATIONSHIP = "    {name} = relationship('{model}'{backref})\n"
+RELATIONSHIP = "    {name} = relationship('{model}'{backref}{uselist})\n"
 
 class SAColumn(Base):
     """SqlAlchemy column, it works like a leaf class, it renders a class property in this case a model class column"""
@@ -19,6 +19,7 @@ class SAColumn(Base):
         self.__nullable = False
         self.__backref = ''
         self.__relationship = False
+        self.__uselist = False
 
     @property
     def pk(self):
@@ -53,6 +54,14 @@ class SAColumn(Base):
         self.__relationship = bool(relationship)
 
     @property
+    def uselist(self):
+        return self.__uselist
+
+    @uselist.setter
+    def uselist(self, uselist):
+        self.__uselist = bool(uselist)
+
+    @property
     def nullable(self):
         return self.__nullable
 
@@ -64,10 +73,18 @@ class SAColumn(Base):
         code = ''
         # for many to one relationships
         if self.__relationship:
-            backref = ''
+            backref = uselist = ''
             if self.__backref:
                 backref = ', back_populates="%s"' % self.__backref
-            code = RELATIONSHIP.format(name=self.name, model=self.type+'Model', backref=backref)
+            #uselist flag is used to one to one relationships only
+            if self.__uselist:
+                uselist = ', uselist=False'
+            code = RELATIONSHIP.format(
+                name=self.name,
+                model=self.type+'Model',
+                backref=backref,
+                uselist=uselist
+            )
         else:
             key = nullable = relationship = ''
             original_type = self.type
@@ -79,16 +96,27 @@ class SAColumn(Base):
             # each foreign key must have its own relationship
             if self.__fk:
                 key = (', ForeignKey("%s")' % (self.__fk)) + key
-                backref = ''
+                backref = uselist = ''
                 if self.__backref:
                     backref = ', back_populates="%s"' % self.__backref
-                relationship = RELATIONSHIP.format(name=self.name, model=original_type+'Model', backref=backref)
+                relationship = RELATIONSHIP.format(
+                    name=self.name,
+                    model=original_type+'Model',
+                    backref=backref,
+                    uselist=uselist
+                )
                 self.name += 'Id'
                 self.type = 'Integer'
 
             if self.__nullable:
                 nullable = ', nullable=True'
 
-            code = COLUMN.format(name=self.name, type=self.type, key=key, nullable=nullable, relationship=relationship)
+            code = COLUMN.format(
+                name=self.name,
+                type=self.type,
+                key=key,
+                nullable=nullable,
+                relationship=relationship
+            )
 
         return code
