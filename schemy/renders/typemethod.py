@@ -58,41 +58,20 @@ class TypeMethod(Base):
         the parent is another obj different than the root obj Query"""
         self._method_name = 'resolve_type_{name}'\
                             .format(name=self.parent.lower())
-        parent = self.parent
+        args.insert(0, self.type.name)
+        code.append('return {}.{}'.format(self.type.name, self.parent_field))
 
         if self.relationship:
             # for many to many relationships
-            args.insert(0, parent)
             code.insert(0, '"""This method is resolve a many to many relationship')
             code.insert(1, 'with the type {parent}"""'.format(parent=self.parent))
-            parent_datasource = parent + 'Model'
-            datasource_query = parent.lower() + '_query'
-            self.type.add_import('from PACKAGE_NAME.model import ' + parent_datasource)
-            code.append('{ds_query} = {ds}.query()'.format(
-                ds=parent_datasource,
-                ds_query=datasource_query
-            ))
-            code.append('{parent_obj} = {ds_query}.get({parent}.id)'\
-                        .format(
-                            parent_obj=parent.lower(),
-                            ds_query=datasource_query,
-                            parent=parent
-                        ))
-            code.append('return {parent_obj}.{field}'.format(
-                parent_obj=parent.lower(),
-                field=self.name
-            ))
         elif self.list:
             # for many to one relationships
-            args.insert(0, self.type.name)
             code.insert(0, '"""This method is resolve a many to one relationship')
             code.insert(1, 'with the type {parent}"""'.format(parent=self.parent))
-            code.append('return {}.{}'.format(self.type.name, self.parent_field))
         else:
-            args.insert(0, self.type.name)
             code.insert(0, '"""This method is resolve a one to many relationship')
             code.insert(1, 'with the type {parent}"""'.format(parent=self.parent))
-            code.append('return {}.{}'.format(self.type.name, self.parent_field))
 
         return code, args
 
