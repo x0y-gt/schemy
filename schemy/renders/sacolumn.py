@@ -3,7 +3,7 @@ from schemy.renders import Base
 __ALL__ = ['SAColumn']
 
 COLUMN = "    {name} = Column({type}{key}{nullable})\n{relationship}"
-RELATIONSHIP = "    {name} = relationship('{model}'{backref}{uselist})\n"
+RELATIONSHIP = "    {name} = relationship('{model}'{backref}{uselist}{secondary})\n"
 
 class SAColumn(Base):
     """SqlAlchemy column, it works like a leaf class, it renders a class property in this case a model class column"""
@@ -18,6 +18,7 @@ class SAColumn(Base):
         self.__fk = ''
         self.__nullable = False
         self.__backref = ''
+        self.__secondary = ''
         self.__relationship = False
         self.__uselist = False
 
@@ -44,6 +45,14 @@ class SAColumn(Base):
     @backref.setter
     def backref(self, backref):
         self.__backref = backref
+
+    @property
+    def secondary(self):
+        return self.__secondary
+
+    @secondary.setter
+    def secondary(self, secondary):
+        self.__secondary = secondary
 
     @property
     def relationship(self):
@@ -73,9 +82,12 @@ class SAColumn(Base):
         code = ''
         # for many to one relationships
         if self.__relationship:
-            backref = uselist = ''
+            backref = uselist = secondary = ''
             if self.__backref:
                 backref = ', back_populates="%s"' % self.__backref
+            #secondary flag is used to many to many relationships only
+            if self.__secondary:
+                secondary = ', secondary="%s"' % self.__secondary
             #uselist flag is used to one to one relationships only
             if self.__uselist:
                 uselist = ', uselist=False'
@@ -83,6 +95,7 @@ class SAColumn(Base):
                 name=self.name,
                 model=self.type+'Model',
                 backref=backref,
+                secondary=secondary,
                 uselist=uselist
             )
         else:
@@ -96,13 +109,17 @@ class SAColumn(Base):
             # each foreign key must have its own relationship
             if self.__fk:
                 key = (', ForeignKey("%s")' % (self.__fk)) + key
-                backref = uselist = ''
+                backref = uselist = secondary = ''
                 if self.__backref:
                     backref = ', back_populates="%s"' % self.__backref
+                #this is a special case for link tables only
+                if self.__pk and self.__fk and self.__backref:
+                    backref = ', backref="%s"' % self.__backref
                 relationship = RELATIONSHIP.format(
                     name=self.name,
                     model=original_type+'Model',
                     backref=backref,
+                    secondary=secondary,
                     uselist=uselist
                 )
                 self.name += 'Id'

@@ -63,9 +63,9 @@ def sync_models(ctx):
                 else:
                     link_model_name = '%s%s' % (type_2nd, type_1ft)
 
-                field = SAColumn(field_name, link_model_name)
+                field = SAColumn(field_name, type_2nd)
                 field.relationship = True
-                field.backref = type_name.lower()
+                field.secondary = link_model_name.lower()
                 model.add_relationship(field)
 
                 # Create the link model if not already created
@@ -76,12 +76,12 @@ def sync_models(ctx):
                     link_id1 = Column(type_name.lower(), type_name)
                     link_id1.pk = True
                     link_id1.fk = '%s.id' % type_name.lower()
-                    link_id1.backref = field_name
+                    link_id1.backref = link_model_name.lower()
 
                     link_id2 = Column(rel_object_type.lower(), rel_object_type)
                     link_id2.pk = True
                     link_id2.fk = '%s.id' % rel_object_type.lower()
-                    link_id2.backref = rel_field_name
+                    link_id2.backref = link_model_name.lower()
 
                     link_model.add_column(link_id1)
                     link_model.add_column(link_id2)
