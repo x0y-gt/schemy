@@ -42,14 +42,17 @@ There are 4 query types that each type can resolve:
         relationship = False
         if not query:
             method_parent = 'Query'
+            parent_field = None
         else:
             method_parent = query[-1]['type']
+            parent_field = query[-1]['field']
             relationship = bool(query[-1]['list'] and last_field['list'])
 
         # create the method if the tuple parent name doesn't exist
         if not new_type.get_method(method_name, method_parent):
             new_method = TypeMethod(method_name, new_type)
             new_method.parent = method_parent
+            new_method.parent_field = parent_field
             new_method.relationship = relationship
             new_method.list = last_field['list']
             new_method.args = last_field['args']

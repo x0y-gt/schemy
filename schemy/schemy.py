@@ -78,8 +78,12 @@ class Schemy:
         if isinstance(return_type, GraphQLScalarType):
             return default_field_resolver(root, info, **args)
 
-        return_type_name = return_type.name
-        type_class = self.get_type(return_type_name)
+        if info.parent_type.name == 'Query':
+            type_name = return_type.name
+        else:
+            type_name = info.parent_type.name
+
+        type_class = self.get_type(type_name)
         value = None
         if type_class:
             type_instance = type_class(self.datasource)
@@ -87,10 +91,16 @@ class Schemy:
             # Look for same field name as defined in the Query root object
             if info.parent_type.name == 'Query':
                 prefix = 'resolve_'
-                field_name = '{prefix}{name}'.format(prefix=prefix, name=info.field_name)
+                field_name = '{prefix}{name}'.format(
+                    prefix=prefix,
+                    name=info.field_name
+                )
             else:
                 prefix = 'resolve_type_'
-                field_name = '{prefix}{name}'.format(prefix=prefix, name=info.parent_type.name.lower())
+                field_name = '{prefix}{name}'.format(
+                    prefix=prefix,
+                    name=return_type.name.lower()
+                )
 
             # find and execute the resolver
             if hasattr(type_instance, field_name):
@@ -109,7 +119,7 @@ class Schemy:
         return value
 
     def get_type(self, type_):
-        """Return a Type module if exists if not, None"""
+        """Return a Type module if exists, None overwise"""
         type_name = type_.lower()
         return self._types[type_name] if type_name in self._types else None
 
@@ -118,9 +128,13 @@ class Schemy:
         types = {}
         mods = load_modules(types_path + '/*.py')
         for type_ in mods:
-            for _name, object_ in inspect.getmembers(type_, inspect.isclass):
-                if object_.__name__ != 'BaseType' and issubclass(object_, BaseType):
-                    key = type_.__name__.split('.')[-1] # get just the module name, without the package
+            type_name = type_.__name__.split('.')[-1]
+            for name, object_ in inspect.getmembers(type_, inspect.isclass):
+                if (object_.__name__ != 'BaseType'
+                        and issubclass(object_, BaseType)
+                        and name.lower() == type_name.lower()):
+                    # get just the module name, without the package
+                    key = type_.__name__.split('.')[-1]
                     types[key] = object_
 
         return types
