@@ -7,7 +7,6 @@ from schemy.cmd.main import main
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
 
-
 TYPES_DIR = 'type'
 
 @main.command()
@@ -31,37 +30,42 @@ There are 4 query types that each type can resolve:
 
     types = {} # a list that has all the objs to render each type
     for query in queries:
-        last_field = query.pop()
-        # creates or gets the type instance to render later
-        if last_field['type'] not in types:
-            new_type = types[last_field['type']] = Type(last_field['type'])
-        else:
-            new_type = types[last_field['type']]
+        field = query.pop()
+        field_name = field['field']
+        field_type = field['resolves_type']
 
-        method_name = last_field['field']
         relationship = False
         if not query:
-            method_parent = 'Query'
-            parent_field = None
+            #if query is empty at this point, then we are dealing with a "resolve field" case
+            type_name = field_type #'Query'
         else:
-            method_parent = query[-1]['type']
-            parent_field = query[-1]['field']
-            relationship = bool(query[-1]['list'] and last_field['list'])
+            #else we are dealing with a "resolve type" case
+            type_name = field['type']
+            relationship = bool(query[-1]['list'] and field['list'])
 
-        # create the method if the tuple parent name doesn't exist
-        if not new_type.get_method(method_name, method_parent):
-            new_method = TypeMethod(method_name, new_type)
-            new_method.parent = method_parent
-            new_method.parent_field = parent_field
+        # create and get the type instance to render
+        if type_name not in types:
+            types[type_name] = Type(type_name)
+        type_ = types[type_name]
+
+        # create the method if it doesn't exist
+        if not type_.get_method(field_name):
+            new_method = TypeMethod(field_name)
+            new_method.type = field_type
             new_method.relationship = relationship
-            new_method.list = last_field['list']
-            new_method.args = last_field['args']
-            new_method.nullable = last_field['nullable']
-            new_type.add_method(new_method)
+            new_method.list = field['list']
+            new_method.args = field['args']
+            new_method.nullable = field['nullable']
+            #Render a resolve type method if not query from root
+            new_method.resolve_type = bool(query)
+            type_.add_method(new_method)
+
 
     types_dir = os.path.join(ctx.obj['project_path'], TYPES_DIR)
     # Render all types and save them
-    for t in types.values():
-        with Storage(os.path.join(types_dir, t.name.lower() + '.py'), 'w') as type_file:
-            type_file.content = t.render(package_name=ctx.obj['project_name']) #auto saving
-        click.echo("Generating %s type class" % t.name)
+    for type_ in types.values():
+        with Storage(os.path.join(types_dir, type_.name.lower() + '.py'), 'w') as type_file:
+            type_file.content = type_.render(package_name=ctx.obj['project_name']) #auto saving
+        click.echo("Generating %s type class" % type_.name)
+
+    return 0
