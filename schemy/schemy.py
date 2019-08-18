@@ -1,6 +1,5 @@
 import inspect
 
-from graphql import graphql_sync, format_error
 from graphql.execution import default_field_resolver
 from graphql.type.definition import get_named_type, GraphQLScalarType
 
@@ -23,7 +22,7 @@ class Schemy:
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
         self._resolver = (lambda s:\
-                         lambda root, info, **args: s.resolve_type(root, info, **args)
+                          lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
                          )(self)
         self._types = {}
         self.bootstrap()
@@ -32,7 +31,7 @@ class Schemy:
         """Loads default middlewares like logging and extra stuff"""
         pass
 
-    def build(self, sdl_path:str=None):
+    def build(self, sdl_path: str = None):
         """Parse and builds a GraphQl Schema File"""
         path = sdl_path if sdl_path else self.sdl_path
         if not self.graphql:
@@ -41,7 +40,7 @@ class Schemy:
             self.graphql = gql
 
         #pre-load types
-        self._types = self._load_types(self.types_path)
+        self._types = self._load_types()
 
         return self
 
@@ -52,22 +51,6 @@ class Schemy:
 
     def get_resolver(self):
         return self._resolver
-
-    #def handle(self, query: Query) -> Response:
-    #def handle(self, query):
-    #    root = None
-    #    context = {}
-    #    variables = {}
-    #    result = graphql_sync(
-    #        self.graphql.schema,
-    #        query,
-    #        root,
-    #        context,
-    #        variables,
-    #        field_resolver=self.resolver
-    #    )
-    #    #middleware=[LogMiddleware('logware')])
-    #    return result
 
     def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
@@ -123,10 +106,10 @@ class Schemy:
         type_name = type_.lower()
         return self._types[type_name] if type_name in self._types else None
 
-    def _load_types(self, types_path):
+    def _load_types(self):
         """Load all the types into the _types property"""
         types = {}
-        mods = load_modules(types_path + '/*.py')
+        mods = load_modules(self.types_path + '/*.py')
         for type_ in mods:
             type_name = type_.__name__.split('.')[-1]
             for name, object_ in inspect.getmembers(type_, inspect.isclass):
