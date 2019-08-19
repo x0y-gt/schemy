@@ -9,6 +9,8 @@ from schemy.cmd.main import main
 from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
+from pprint import pprint
+
 
 MODELS_DIR = 'model'
 
@@ -40,12 +42,17 @@ def sync_models(ctx):
         for field_name, field_data in type_metadata['relationship'].items():
             #look for the relationship on the other object
             rel_object_type = field_data['type']
-            func_filter_type = (lambda x, obj:
-                                obj[1]['type'] == type_name and obj or x)
-            rel_field_name, rel_field_data = reduce(
-                func_filter_type,
+            rels = list(filter(
+                lambda rel: rel[1]['type'] == type_name,
                 types['objects'][rel_object_type]['relationship'].items()
-            )
+            ))
+            if rels:
+                rel_field_name, rel_field_data = rels[0]
+            else:
+                #We can't generate models if the objects doesn't have a reference to each other
+                click.echo('ABORTING: Missing reference to type {} from type {}'
+                           .format(type_name, rel_object_type))
+                return 1
 
             #many to many relationship, we need to create another model
             if field_data['list'] and rel_field_data['list']:
@@ -56,9 +63,9 @@ def sync_models(ctx):
                 else:
                     link_model_name = '%s%s' % (type_2nd, type_1ft)
 
-                field = SAColumn(field_name, link_model_name)
+                field = SAColumn(field_name, type_2nd)
                 field.relationship = True
-                field.backref = type_name.lower()
+                field.secondary = link_model_name.lower()
                 model.add_relationship(field)
 
                 # Create the link model if not already created
@@ -69,12 +76,12 @@ def sync_models(ctx):
                     link_id1 = Column(type_name.lower(), type_name)
                     link_id1.pk = True
                     link_id1.fk = '%s.id' % type_name.lower()
-                    link_id1.backref = field_name
+                    link_id1.backref = link_model_name.lower()
 
                     link_id2 = Column(rel_object_type.lower(), rel_object_type)
                     link_id2.pk = True
                     link_id2.fk = '%s.id' % rel_object_type.lower()
-                    link_id2.backref = rel_field_name
+                    link_id2.backref = link_model_name.lower()
 
                     link_model.add_column(link_id1)
                     link_model.add_column(link_id2)
@@ -88,11 +95,32 @@ def sync_models(ctx):
                 model.add_relationship(field)
 
             #many to one relationship, I'm the child
-            else:
+            elif rel_field_data['list']:
                 field = SAColumn(field_name, field_data['type'])
                 field.fk = '%s.id' % rel_object_type.lower()
                 field.backref = rel_field_name
                 model.add_relationship(field)
+
+            #one to one, Im the parent
+            elif field_data['nullable']:
+                field = SAColumn(field_name, field_data['type'])
+                field.relationship = True
+                field.uselist = True
+                field.backref = rel_field_name
+                model.add_relationship(field)
+
+            #one to one, Im the child
+            elif not field_data['nullable']:
+                field = SAColumn(field_name, field_data['type'])
+                field.fk = '%s.id' % rel_object_type.lower()
+                field.backref = rel_field_name
+                model.add_relationship(field)
+
+            else:
+                click.echo(('WARNING: Invalid relationship between {} and {}. Possible invalid '+
+                            'one to one relationship')
+                           .format(type_name, rel_object_type))
+                return 1
 
         datasources[type_name] = model
 

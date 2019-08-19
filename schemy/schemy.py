@@ -1,6 +1,5 @@
 import inspect
 
-from graphql import graphql_sync, format_error
 from graphql.execution import default_field_resolver
 from graphql.type.definition import get_named_type, GraphQLScalarType
 
@@ -23,7 +22,7 @@ class Schemy:
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
         self._resolver = (lambda s:\
-                         lambda root, info, **args: s.resolve_type(root, info, **args)
+                          lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
                          )(self)
         self._types = {}
         self.bootstrap()
@@ -32,7 +31,7 @@ class Schemy:
         """Loads default middlewares like logging and extra stuff"""
         pass
 
-    def build(self, sdl_path:str=None):
+    def build(self, sdl_path: str = None):
         """Parse and builds a GraphQl Schema File"""
         path = sdl_path if sdl_path else self.sdl_path
         if not self.graphql:
@@ -41,7 +40,7 @@ class Schemy:
             self.graphql = gql
 
         #pre-load types
-        self._types = self._load_types(self.types_path)
+        self._types = self._load_types()
 
         return self
 
@@ -53,22 +52,6 @@ class Schemy:
     def get_resolver(self):
         return self._resolver
 
-    #def handle(self, query: Query) -> Response:
-    #def handle(self, query):
-    #    root = None
-    #    context = {}
-    #    variables = {}
-    #    result = graphql_sync(
-    #        self.graphql.schema,
-    #        query,
-    #        root,
-    #        context,
-    #        variables,
-    #        field_resolver=self.resolver
-    #    )
-    #    #middleware=[LogMiddleware('logware')])
-    #    return result
-
     def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
         If it's a scalar then the default resolver(from the graphql package) is executed,
@@ -78,8 +61,12 @@ class Schemy:
         if isinstance(return_type, GraphQLScalarType):
             return default_field_resolver(root, info, **args)
 
-        return_type_name = return_type.name
-        type_class = self.get_type(return_type_name)
+        if info.parent_type.name == 'Query':
+            type_name = return_type.name
+        else:
+            type_name = info.parent_type.name
+
+        type_class = self.get_type(type_name)
         value = None
         if type_class:
             type_instance = type_class(self.datasource)
@@ -87,10 +74,16 @@ class Schemy:
             # Look for same field name as defined in the Query root object
             if info.parent_type.name == 'Query':
                 prefix = 'resolve_'
-                field_name = '{prefix}{name}'.format(prefix=prefix, name=info.field_name)
+                field_name = '{prefix}{name}'.format(
+                    prefix=prefix,
+                    name=info.field_name
+                )
             else:
                 prefix = 'resolve_type_'
-                field_name = '{prefix}{name}'.format(prefix=prefix, name=info.parent_type.name.lower())
+                field_name = '{prefix}{name}'.format(
+                    prefix=prefix,
+                    name=return_type.name.lower()
+                )
 
             # find and execute the resolver
             if hasattr(type_instance, field_name):
@@ -109,18 +102,22 @@ class Schemy:
         return value
 
     def get_type(self, type_):
-        """Return a Type module if exists if not, None"""
+        """Return a Type module if exists, None overwise"""
         type_name = type_.lower()
         return self._types[type_name] if type_name in self._types else None
 
-    def _load_types(self, types_path):
+    def _load_types(self):
         """Load all the types into the _types property"""
         types = {}
-        mods = load_modules(types_path + '/*.py')
+        mods = load_modules(self.types_path + '/*.py')
         for type_ in mods:
-            for _name, object_ in inspect.getmembers(type_, inspect.isclass):
-                if object_.__name__ != 'BaseType' and issubclass(object_, BaseType):
-                    key = type_.__name__.split('.')[-1] # get just the module name, without the package
+            type_name = type_.__name__.split('.')[-1]
+            for name, object_ in inspect.getmembers(type_, inspect.isclass):
+                if (object_.__name__ != 'BaseType'
+                        and issubclass(object_, BaseType)
+                        and name.lower() == type_name.lower()):
+                    # get just the module name, without the package
+                    key = type_.__name__.split('.')[-1]
                     types[key] = object_
 
         return types
