@@ -26,12 +26,13 @@ class {name}(BaseType):
         ]
         self.methods = []
 
-    def add_method(self, method:TypeMethod):
+    def add_method(self, method: TypeMethod):
         """Adds a new method defined with the TypeMethod class"""
-        if method.parent == 'Query':
-            self.methods.insert(0, method)
-        else:
+        method.parent = self
+        if method.resolve_type:
             self.methods.append(method)
+        else:
+            self.methods.insert(0, method)
         return self
 
     def add_import(self, module):
@@ -39,10 +40,10 @@ class {name}(BaseType):
         self.imports.append(module)
         return self
 
-    def get_method(self, name, parent):
+    def get_method(self, name):
         """Returns the class of a method if it exists
         It's identified by the name|parent pair"""
-        methods = [m for m in self.methods if name == m.name and parent == m.parent]
+        methods = [m for m in self.methods if name == m.name]
         return methods[0] if methods else None
 
     def render(self, package_name='api'):
@@ -55,7 +56,7 @@ class {name}(BaseType):
             imports='\n'.join(self.imports),
             name=self.name,
             datasource=self.datasource_name,
-            methods= methods
+            methods=methods
         )
         code = code.replace('PACKAGE_NAME', package_name)
         return code
