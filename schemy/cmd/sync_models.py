@@ -9,8 +9,6 @@ from schemy.cmd.main import main
 from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
-from pprint import pprint
-
 
 MODELS_DIR = 'model'
 

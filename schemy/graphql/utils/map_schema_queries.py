@@ -2,7 +2,7 @@ from graphql import get_named_type
 from schemy.graphql.utils.map_schema_types import map_schema_types
 
 __all__ = ["map_schema_queries"]
-import sys
+
 
 def map_schema_queries(schema, base='Query'):
     """Returns a list that contains all the path queries from a base object like Query or Mutation
@@ -39,7 +39,7 @@ def _map_query_path(types, base_type, stack, base=None):
     current_type = stack[-1] if stack else base
     for field_name, field in base_type['relationship'].items():
         # if it's a field that leave us to another type then...
-        if field['type'] in types:#.keys():
+        if field['type'] in types:
             #add this query path
             queries.append([{
                 'type': current_type,
