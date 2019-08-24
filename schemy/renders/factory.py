@@ -27,30 +27,18 @@ class Factory(BaseDatasource):
             'from datetime import datetime',
             'from random import randint',
             'import factory',
+            'import PACKAGE_NAME.database.factories as factories',
             'from PACKAGE_NAME.model import datasource',
+            'from PACKAGE_NAME.model import {name}Model'.format(name=self.name)
         ]
-        imports.append('from PACKAGE_NAME.model import {name}Model'.format(
-            name=self.name
-        ))
 
         cols = ''
         for _col_name, col in self.cols.items():
-            #this is an exception to columns in many to many tables
-            if col.many_to_one:
-                imports.append('from .{module} import {name}Factory'.format(
-                    module=col.many_to_one.lower(),
-                    name=col.many_to_one
-                ))
             cols += col.render()
 
         rels = ''
         if self.rels:
             for _rel_name, rel in self.rels.items():
-                if rel.many_to_one:
-                    imports.append('from .{module} import {name}Factory'.format(
-                        module=rel.many_to_one.lower(),
-                        name=rel.many_to_one
-                    ))
                 rels += rel.render()
 
         code = MODEL.format(

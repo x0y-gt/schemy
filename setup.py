@@ -25,19 +25,16 @@ setup(name='schemy',
           'GraphQL-core-next>=1.0.3',
           'SQLAlchemy==1.3.4',
           'psycopg2-binary==2.8.2',
-          'aiohttp-graphql'
+          'aiohttp-graphql==1.0 @ git+https://github.com/x0y-gt/aiohttp-graphql@use-core-next#egg=aiohttp-graphql-1.0',
+          'alembic==1.0.10',
+          'factory-boy==2.12'
       ],
       extras_require={
           'dev': [
-              'alembic==1.0.10',
-              'factory-boy',
               'pytest>=4.4.2',
               'pytest-runner',
           ]
       },
-      dependency_links=[
-          'git+https://github.com/x0y-gt/aiohttp-graphql@use-core-next#egg=aiohttp-graphql-1.0',
-      ],
       setup_requires=["pytest-runner"],
       tests_require=["pytest"]
 )

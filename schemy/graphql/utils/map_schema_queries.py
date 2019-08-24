@@ -1,11 +1,11 @@
 from graphql import get_named_type
 from schemy.graphql.utils.map_schema_types import map_schema_types
 
-__all__ = ["map_schema_resolvers"]
+__all__ = ["map_schema_queries"]
 
 
 def map_schema_queries(schema, base='Query'):
-    """Returns a list that contains all the path queries from a base object like Query of Mutation
+    """Returns a list that contains all the path queries from a base object like Query or Mutation
 
     :param base: can be Query or Mutation
 
@@ -23,7 +23,7 @@ def map_schema_queries(schema, base='Query'):
     types = map_schema_types(schema, [])
 
     stack = []
-    queries = _map_query_path(types['objects'], types['objects'][base], stack)
+    queries = _map_query_path(types['objects'], types['objects'][base], stack, base)
     #map arguments to root fields
     for query in queries:
         # root field if it only has one field in the path
@@ -32,14 +32,23 @@ def map_schema_queries(schema, base='Query'):
 
     return queries
 
-def _map_query_path(types, base_type, stack):
+def _map_query_path(types, base_type, stack, base=None):
     """Recursive function to get a list of all path queries"""
     queries = []
+    #this is the type that holds the fields, the parent
+    current_type = stack[-1] if stack else base
     for field_name, field in base_type['relationship'].items():
         # if it's a field that leave us to another type then...
-        if field['type'] in types.keys():
+        if field['type'] in types:
             #add this query path
-            queries.append([{'field':field_name, 'args':{}, **field}])
+            queries.append([{
+                'type': current_type,
+                'field':field_name,
+                'args':{},
+                'resolves_type': field['type'],
+                'list': field['list'],
+                'nullable': field['nullable']
+            }])
 
             # if the field type is not already in the stack, this is to avoid an infinite recursion
             if field['type'] not in stack:
@@ -47,13 +56,22 @@ def _map_query_path(types, base_type, stack):
                 sub_queries = _map_query_path(types, types[field['type']], stack)
                 stack.pop()
                 # prepend current query path to the returned queries
-                queries += [[{'field':field_name, 'args':{}, **field}] + sub_query for sub_query in sub_queries]
+                current_node = {
+                    'type': current_type,
+                    'field':field_name,
+                    'args':{},
+                    'resolves_type': field['type'],
+                    'list': field['list'],
+                    'nullable': field['nullable']
+                }
+                queries += [[current_node] + sub_query for sub_query in sub_queries]
 
     return queries
 
 def _get_args(fields, field):
     args = {}
-    if field in fields and len(fields[field].args):
-        args = {arg_name: get_named_type(arg.type).name for arg_name, arg in fields[field].args.items()}
+    if field in fields and fields[field].args:
+        args = ({arg_name: get_named_type(arg.type).name
+                 for arg_name, arg in fields[field].args.items()})
 
     return args

@@ -1,5 +1,5 @@
-from .seed import seed
+__all__ = ['init']
 
-__all__ = [
-    'seed'
-]
+def init():
+    global stack
+    stack = {'_owner':{}}
