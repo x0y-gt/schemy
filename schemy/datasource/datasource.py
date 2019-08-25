@@ -17,7 +17,7 @@ class Datasource(metaclass=Singleton):
             'engine': engine,
             'session': scoped_session(sessionmaker(
                 autocommit=False,
-                autoflush=False,
+                autoflush=True,
                 bind=engine
             ))
         }

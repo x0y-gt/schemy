@@ -87,12 +87,17 @@ class Schemy:
 
             # find and execute the resolver
             if hasattr(type_instance, field_name):
-                query_resolver = getattr(type_instance, field_name)
-                #if info.parent_type.name == 'Query':
-                #    value = query_resolver(**args)
-                #else:
-                value = query_resolver(root, info, **args)
-                del type_instance
+                try:
+                    query_resolver = getattr(type_instance, field_name)
+                    #if info.parent_type.name == 'Query':
+                    #    value = query_resolver(**args)
+                    #else:
+                    value = query_resolver(root, info, **args)
+                    del type_instance
+                    self.datasource.session.commit()
+                except:
+                    self.datasource.session.rollback()
+                    raise
             else:
                 print('log.warning: resolver {type_name}.{field_name} not found'.format(
                     type_name=type_class.__name__,
