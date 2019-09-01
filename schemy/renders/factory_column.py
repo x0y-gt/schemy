@@ -87,7 +87,7 @@ class FactoryColumn(Base):
             factories.stack['{type}'].append(self)
 
         obj = None
-        if extracted:
+        if extracted is not None:
             obj = extracted
         elif '{resolved_type}' in factories.stack and '{resolved_type}' not in factories.stack['_owner']['{type}']:
             #looks for the lastest created if any
@@ -123,7 +123,7 @@ class FactoryColumn(Base):
             factories.stack['{type}'].append(self)
 
         objs = []
-        if extracted:
+        if extracted is not None:
             objs = extracted
         elif '{resolved_type}' in factories.stack and '{resolved_type}' not in factories.stack['_owner']['{type}']:
             #looks for the lastest created if any
@@ -162,7 +162,7 @@ class FactoryColumn(Base):
             factories.stack['{type}'].append(self)
 
         objs = []
-        if extracted:
+        if extracted is not None:
             objs = extracted
         elif '{resolved_type}' in factories.stack and '{resolved_type}' not in factories.stack['_owner']['{type}']:
             #looks for the lastest created if any
@@ -206,7 +206,7 @@ class FactoryColumn(Base):
             factories.stack['{type}'].append(self)
 
         obj = None
-        if extracted:
+        if extracted is not None:
             obj = extracted
         elif '{resolved_type}' in factories.stack and '{resolved_type}' not in factories.stack['_owner']['{type}']:
             #looks for the lastest created if any

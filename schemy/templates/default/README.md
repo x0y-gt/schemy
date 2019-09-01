@@ -14,7 +14,7 @@ After checking database config
 schemy sync-models
 schemy sync-types
 python setup.py develop ???
-alembic revision --autogenerate -m "init"
+alembic revision --autogenerate -m "First migration, defining entities"
 alembic upgrade head
 schemy sync-factories
 schemy seed
