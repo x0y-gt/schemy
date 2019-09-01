@@ -18,7 +18,6 @@ setup(name='{project_name}',
       extras_require={
           'dev': [
               'alembic==1.0.10',
-              'factory-boy',
               'pytest>=4.4.2',
               'pytest-runner',
           ]
