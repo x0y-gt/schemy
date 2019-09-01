@@ -45,10 +45,11 @@ class TypeMethod(Base): #pylint: disable=too-many-instance-attributes,too-few-pu
 
         self._code.insert(0, '"""This method is to return elements filtered by')
         self._code.insert(1, 'the arguments defined in the root obj Query field')
-        self._code.insert(2, 'WARNING: Assuming the arguments exists as defined fields"""')
+        self._code.insert(2, 'WARNING: Assuming the arguments exists as foreign keys')
+        self._code.insert(3, 'in defined fields, adding "Id" to the arguments"""')
         self._code.append('query = self.query()')
 
-        filters = ['{name}={name}'.format(name=arg_name) for arg_name in self.args]
+        filters = ['{name}Id={name}'.format(name=arg_name) for arg_name in self.args]
 
         self._code.append('query.filter_by({filters})'.format(filters=', '.join(filters)))
         self._code.append('return query.all()')
