@@ -74,16 +74,14 @@ class Schemy:
             # Look for same field name as defined in the Query root object
             if info.parent_type.name == 'Query':
                 prefix = 'resolve_'
-                field_name = '{prefix}{name}'.format(
-                    prefix=prefix,
-                    name=info.field_name
-                )
+                field_name = info.field_name.lower()
             else:
                 prefix = 'resolve_type_'
-                field_name = '{prefix}{name}'.format(
-                    prefix=prefix,
-                    name=return_type.name.lower()
-                )
+                field_name = return_type.name.lower()
+            field_name = '{prefix}{name}'.format(
+                prefix=prefix,
+                name=field_name
+            )
 
             # find and execute the resolver
             if hasattr(type_instance, field_name):

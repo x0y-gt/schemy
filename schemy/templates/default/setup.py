@@ -13,7 +13,7 @@ setup(name='{project_name}',
       license='GNUv3',
       packages=find_packages(),
       install_requires=[
-          'schemy',
+          'schemy@git+https://github.com/x0y-gt/schemy@master#egg=schemy-0.9',
       ],
       extras_require={
           'dev': [
