@@ -22,3 +22,9 @@ schemy seed
 ## Running
 
 `python api/app.py`
+
+## Deploying to Prod
+
+Using docker-machine
+
+`COMPOSE_TLS_VERSION=TLSv1_2 docker-compose -f docker/docker-composer.yaml -f docker/docker-composer.prod.yaml up -d`
