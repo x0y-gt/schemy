@@ -30,10 +30,12 @@ setup(name='schemy',
           'alembic==1.0.10',
           'factory-boy==2.12'
       ],
+      dependency_links=['git+https://github.com/x0y-gt/aiohttp-graphql@use-core-next#egg=aiohttp-graphql-1.0'],
       extras_require={
           'dev': [
               'pytest>=4.4.2',
               'pytest-runner',
+              'aiohttp-devtools',
           ]
       },
       setup_requires=["pytest-runner"],

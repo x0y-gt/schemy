@@ -15,11 +15,13 @@ setup(name='{project_name}',
       install_requires=[
           'schemy@git+https://github.com/x0y-gt/schemy@master#egg=schemy-0.9',
       ],
+      dependency_links=['git+https://github.com/x0y-gt/schemy@master#egg=schemy-0.9'],
       extras_require={
           'dev': [
               'alembic==1.0.10',
               'pytest>=4.4.2',
               'pytest-runner',
+              'aiohttp-devtools',
           ]
       },
       setup_requires=["pytest-runner"],
