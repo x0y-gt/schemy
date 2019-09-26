@@ -15,10 +15,11 @@ def bootstrap_schemy():
     schemy.build()
     return schemy
 
-if __name__ == '__main__':
+def get_app():
     schemy = bootstrap_schemy()
 
     app = web.Application()
+
     # configure app
     gql_view = GraphQLView(
         schema=schemy.schema(),
@@ -41,5 +42,7 @@ if __name__ == '__main__':
     cors.add(get_route)
     cors.add(post_route)
 
+    return app
 
-    web.run_app(app, port=8080)
+if __name__ == '__main__':
+    web.run_app(get_app(), port=7777)
