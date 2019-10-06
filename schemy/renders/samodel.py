@@ -9,8 +9,8 @@ __all__ = ['{name}Model']
 class {name}Model(Base):
     __tablename__ = '{table}'\n
 {cols}
-    createdAt = Column(String, nullable=True)
-    updatedAt = Column(String, nullable=True)
+    createdAt = Column(DateTime, default=datetime.datetime.utcnow)
+    updatedAt = Column(DateTime, default=datetime.datetime.utcnow)
 
 {rels}"""
 
@@ -19,6 +19,7 @@ class SAModel(BaseDatasource):
     def __init__(self, name):
         super(SAModel, self).__init__(name)
         self.imports = [
+            'import datetime',
             'from PACKAGE_NAME.model import Base',
         ]
 
@@ -35,7 +36,7 @@ class SAModel(BaseDatasource):
             for _rel_name, rel in self.rels.items():
                 rels += rel.render()
 
-        self.imports.append('from sqlalchemy import Column, ForeignKey, {types}'\
+        self.imports.append('from sqlalchemy import Column, ForeignKey, DateTime {types}'\
                         .format(types=", ".join(set(types))))
         code = MODEL.format(
             name=self.name,
