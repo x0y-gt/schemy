@@ -1,4 +1,5 @@
 from abc import ABC
+from schemy.datasource import Datasource
 
 __all__ = ['BaseService']
 
@@ -7,11 +8,11 @@ class BaseService(ABC):
     """This abstract class is the parent of the service's classes
     It helps to access the query object to do the queries from the service classes"""
 
-    def __new__(cls, datasource, *args, **kwargs):
-        instance = super(BaseType, cls).__new__(cls, *args, **kwargs)
+    def __new__(cls, *args, **kwargs):
+        instance = super(BaseService, cls).__new__(cls, *args, **kwargs)
         if hasattr(instance, 'DATASOURCE'):
-            instance._session = datasource.session
-            instance._query = datasource.session.query(instance.DATASOURCE)
+            instance._session = Datasource().session
+            instance._query = Datasource().session.query(instance.DATASOURCE)
         return instance
 
     def query(self):
