@@ -36,7 +36,7 @@ class SAModel(BaseDatasource):
             for _rel_name, rel in self.rels.items():
                 rels += rel.render()
 
-        self.imports.append('from sqlalchemy import Column, ForeignKey, DateTime {types}'\
+        self.imports.append('from sqlalchemy import Column, ForeignKey, DateTime, {types}'\
                         .format(types=", ".join(set(types))))
         code = MODEL.format(
             name=self.name,
