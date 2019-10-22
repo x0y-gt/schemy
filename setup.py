@@ -28,7 +28,8 @@ setup(name='schemy',
           'psycopg2-binary==2.8.2',
           'aiohttp-graphql@git+https://github.com/x0y-gt/aiohttp-graphql@use-core-next#egg=aiohttp-graphql-1.0',
           'alembic==1.0.10',
-          'factory-boy==2.12'
+          'factory-boy==2.12',
+          'spotlight==1.0.4'
       ],
       dependency_links=['git+https://github.com/x0y-gt/aiohttp-graphql@use-core-next#egg=aiohttp-graphql-1.0'],
       extras_require={
