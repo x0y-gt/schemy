@@ -9,6 +9,7 @@ from schemy.utils import load_modules
 from schemy.type import BaseType
 
 
+from pprint import pprint
 class Schemy:
     """This is the framework's main class.
     Basically it loads a graphql schema, process graphql queries that connects
@@ -61,7 +62,8 @@ class Schemy:
         if isinstance(return_type, GraphQLScalarType):
             return default_field_resolver(root, info, **args)
 
-        if info.parent_type.name == 'Query':
+        # Looking for the type in charge to resolve the query/mutation
+        if info.parent_type.name == 'Query' or info.parent_type.name == 'Mutation':
             type_name = return_type.name
         else:
             type_name = info.parent_type.name
@@ -71,9 +73,12 @@ class Schemy:
         if type_class:
             type_instance = type_class(self.datasource)
 
-            # Look for same field name as defined in the Query root object
+            # Look for same field name as defined in the Query or Mutation root objects
             if info.parent_type.name == 'Query':
                 prefix = 'resolve_'
+                field_name = info.field_name.lower()
+            elif info.parent_type.name == 'Mutation':
+                prefix = 'resolve_mutation_'
                 field_name = info.field_name.lower()
             else:
                 prefix = 'resolve_type_'
@@ -92,7 +97,7 @@ class Schemy:
                     #else:
                     value = query_resolver(root, info, **args)
                     del type_instance
-                    self.datasource.session.commit()
+                    #self.datasource.session.commit()
                 except:
                     self.datasource.session.rollback()
                     raise

@@ -6,6 +6,7 @@ from schemy import Schemy
 from {project_name} import config
 from {project_name}.model import datasource
 
+gqlv = None
 
 def bootstrap_schemy():
     sdl_path = config.get('APP_ROOT_DIR') + config.get('APP_SDL_PATH')
@@ -15,20 +16,27 @@ def bootstrap_schemy():
     schemy.build()
     return schemy
 
-def get_app():
-    schemy = bootstrap_schemy()
+async def handler(request):
+    global gqlv
 
+    return await gqlv(request)
+
+def get_app():
+    global gqlv
+
+    schemy = bootstrap_schemy()
     app = web.Application()
 
     # configure app
-    gql_view = GraphQLView(
+    gqlv = GraphQLView(
         schema=schemy.schema(),
         field_resolver=schemy.get_resolver(),
         batch=True,
         graphiql=True
     )
-    get_route = app.router.add_route('GET', '/graphql', gql_view, name='graphql')
-    post_route = app.router.add_route('POST', '/graphql', gql_view, name='graphql')
+
+    get_route = app.router.add_route('GET', '/graphql', handler, name='graphql')
+    post_route = app.router.add_route('POST', '/graphql', handler, name='graphql')
 
     #enable CORS
     cors = aiohttp_cors.setup(app, defaults={
