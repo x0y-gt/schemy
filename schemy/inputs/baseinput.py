@@ -10,11 +10,15 @@ class BaseInput(object):
     def __init__(self, input_, *args, **kwargs):
         self._input = input_
         self._raise = False
+        self.validated = False
 
     def validate(self, raise_if_error=False):
         errors = self._validate()
         if errors and raise_if_error:
             raise Exception(errors)
+
+        self.validated = True
+
         return errors
 
     def _validate(self):
@@ -24,13 +28,29 @@ class BaseInput(object):
         rules = {}
         errors = {}
         if self.RULES:
-            dependencies = {k: v for k, v in self.RULES.items() if inspect.isclass(v) and issubclass(v, BaseInput)}
-            rules = {k: v for k, v in self.RULES.items() if not inspect.isclass(v)}
+            dependencies = {k: v
+                            for k, v in self.RULES.items()
+                            if (inspect.isclass(v) and issubclass(v, BaseInput))
+                                or (isinstance(v, list) and v)}
+            rules = {k: v
+                     for k, v in self.RULES.items()
+                     if not inspect.isclass(v)
+                        and not isinstance(v, list)}
             errors = Validator().validate(self._input, rules)
             for field_name, input_class in dependencies.items():
-                input_instance = input_class(self._input[field_name])
-                errors = {**errors, **input_instance.validate()}
-                self._input[field_name] = input_instance
+                #can be a list or another input class
+                if isinstance(input_class, list):
+                    input_class = input_class[0]
+                    new_list = []
+                    for value in self._input[field_name]:
+                        input_instance = input_class(value)
+                        new_list.append(input_instance)
+                        errors = {**errors, **input_instance.validate()}
+                    self._input[field_name] = new_list
+                else:
+                    input_instance = input_class(self._input[field_name])
+                    self._input[field_name] = input_instance
+                    errors = {**errors, **input_instance.validate()}
         else:
             # log this!
             print('No rules defined for input {}'.format(__name__))
