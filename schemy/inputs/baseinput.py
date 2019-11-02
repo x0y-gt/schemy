@@ -65,3 +65,6 @@ class BaseInput(object):
 
     def __getitem__(self, item):
         return self._input[item]
+
+    def __delitem__(self, item):
+        del self._input[item]
