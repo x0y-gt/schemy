@@ -1,5 +1,5 @@
-import os
 import inspect
+from dotenv import load_dotenv, find_dotenv
 
 from schemy.utils import Singleton
 from schemy.utils import load_modules
@@ -12,7 +12,12 @@ class Config(dict, metaclass=Singleton):
         """Load all the configuration into the instance"""
         super().__init__()
         config_dir = os.path.join(root_pkg, 'config')
+
+        self.__load_dotenv()
         self.__load_config(config_dir)
+
+    def __load_dotenv(self):
+        load_dotenv(find_dotenv(), override=True)
 
     def __load_config(self, config_dir):
         """This method loads all the configuration files in the config package

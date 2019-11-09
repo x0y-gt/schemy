@@ -1,3 +1,4 @@
+import os
 from aiohttp import web
 from aiohttp_graphql import GraphQLView
 import aiohttp_cors
@@ -53,4 +54,4 @@ def get_app():
     return app
 
 if __name__ == '__main__':
-    web.run_app(get_app(), port=7777)
+    web.run_app(get_app(), port=os.getenv('APP_PORT'))
