@@ -1,3 +1,4 @@
+import os
 import inspect
 from dotenv import load_dotenv, find_dotenv
 
@@ -17,7 +18,8 @@ class Config(dict, metaclass=Singleton):
         self.__load_config(config_dir)
 
     def __load_dotenv(self):
-        load_dotenv(find_dotenv(), override=True)
+        env_path = os.path.abspath(os.getcwd()) + '/.env'
+        load_dotenv(dotenv_path=env_path, override=True)
 
     def __load_config(self, config_dir):
         """This method loads all the configuration files in the config package
