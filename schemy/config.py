@@ -1,6 +1,6 @@
 import os
 import inspect
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 
 from schemy.utils import Singleton
 from schemy.utils import load_modules
