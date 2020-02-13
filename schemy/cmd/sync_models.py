@@ -10,7 +10,7 @@ from schemy.renders import SAModel, SAColumn
 from schemy.utils.storage import Storage
 
 
-MODELS_DIR = 'model'
+MODELS_DIR = 'models'
 
 @main.command()
 @click.pass_context

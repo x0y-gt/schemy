@@ -7,7 +7,7 @@ from schemy.cmd.main import main
 from schemy.renders import Type, TypeMethod
 from schemy.utils.storage import Storage
 
-TYPES_DIR = 'type'
+TYPES_DIR = 'types'
 
 @main.command()
 @click.pass_context

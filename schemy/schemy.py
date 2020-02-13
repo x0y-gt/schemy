@@ -6,10 +6,9 @@ from graphql.type.definition import get_named_type, GraphQLScalarType
 #from schemy import Query, Response
 from schemy.graphql import GraphQl
 from schemy.utils import load_modules
-from schemy.type import BaseType
+from schemy.types import BaseType
 
 
-from pprint import pprint
 class Schemy:
     """This is the framework's main class.
     Basically it loads a graphql schema, process graphql queries that connects

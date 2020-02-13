@@ -1,5 +1,5 @@
 from abc import ABC
-from schemy.datasource import Datasource
+from schemy.datasources import Datasource
 
 __all__ = ['BaseService']
 
