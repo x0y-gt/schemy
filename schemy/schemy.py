@@ -56,62 +56,80 @@ class Schemy:
         """This method resolves each field of each type
         If it's a scalar then the default resolver(from the graphql package) is executed,
         if not, we look for a method in our defined types"""
-        return_type = get_named_type(info.return_type)
-        # if return type is scalar then resolve with default resolver
-        if isinstance(return_type, GraphQLScalarType):
-            return default_field_resolver(root, info, **args)
+        graphql_type_to_return = get_named_type(info.return_type)
+        graphql_parent_type = info.parent_type
 
-        # Looking for the type in charge to resolve the query/mutation
-        if info.parent_type.name == 'Query' or info.parent_type.name == 'Mutation':
-            type_name = return_type.name
-        else:
-            type_name = info.parent_type.name
+        #get the class in charge of resolve the current field
+        resolver_class = self._get_resolver_class(
+            not root,
+            graphql_type_to_return,
+            graphql_parent_type
+        )
 
-        type_class = self.get_type(type_name)
-        value = None
-        if type_class:
-            type_instance = type_class(self.datasource)
+        if not resolver_class and not isinstance(graphql_type_to_return, GraphQLScalarType):
+            print('log.warning: resolver class {type_name} not found'.format(
+                type_name=resolver_class.__name__
+            ))
+            raise Exception('Resolver class does not exist')
 
-            # Look for same field name as defined in the Query or Mutation root objects
-            if info.parent_type.name == 'Query':
-                prefix = 'resolve_'
-                field_name = info.field_name.lower()
-            elif info.parent_type.name == 'Mutation':
-                prefix = 'resolve_mutation_'
-                field_name = info.field_name.lower()
-            else:
-                prefix = 'resolve_type_'
-                field_name = return_type.name.lower()
-            field_name = '{prefix}{name}'.format(
-                prefix=prefix,
-                name=field_name
-            )
+        resolver_class_instance = resolver_class(self.datasource)
+        resolver_method_name = self._get_resolver_method(
+            graphql_type_to_return,
+            graphql_parent_type,
+            info.field_name
+        )
 
-            # find and execute the resolver
-            if hasattr(type_instance, field_name):
-                try:
-                    query_resolver = getattr(type_instance, field_name)
-                    #if info.parent_type.name == 'Query':
-                    #    value = query_resolver(**args)
-                    #else:
-                    value = query_resolver(root, info, **args)
-                    del type_instance
-                    #self.datasource.session.commit()
-                except:
-                    self.datasource.session.rollback()
-                    raise
-            else:
-                print('log.warning: resolver {type_name}.{field_name} not found'.format(
-                    type_name=type_class.__name__,
-                    field_name=field_name
-                ))
+        # find and execute the resolver
+        if not hasattr(resolver_class_instance, resolver_method_name):
+            if isinstance(graphql_type_to_return, GraphQLScalarType):
+                return default_field_resolver(root, info, **args)
 
-        return value
+            print('log.warning: resolver {type_name}.{resolver_method} not found'.format(
+                type_name=resolver_class.__name__,
+                resolver_method=resolver_method_name
+            ))
+            raise Exception('Resolver not found')
 
-    def get_type(self, type_):
+        try:
+            query_resolver = getattr(resolver_class_instance, resolver_method_name)
+            return query_resolver(root, info, **args)
+            #self.datasource.session.commit()
+        except:
+            self.datasource.session.rollback()
+            raise
+
+    def _get_resolver_class(self, root, return_type, parent_type):
         """Return a Type module if exists, None overwise"""
-        type_name = type_.lower()
-        return self._types[type_name] if type_name in self._types else None
+
+        # Looking for the resolver class in charge to resolve the query/mutation
+        if root and not isinstance(return_type, GraphQLScalarType):
+            resolver_class_name = return_type.name.lower()
+        else:
+            # the one to resolve is always the parent when I'm now quering from the root
+            # or I'm a scalar
+            resolver_class_name = parent_type.name.lower()
+
+        return self._types[resolver_class_name] if resolver_class_name in self._types else None
+
+    def _get_resolver_method(self, return_type, parent_type, field_name):
+        """Returns the name of the method to be called in order to resolve the query
+        :returns: string
+        """
+        # Look for same field name as defined in the Query or Mutation root objects
+        if parent_type.name == 'Query' or isinstance(return_type, GraphQLScalarType):
+            prefix = 'resolve_'
+            resolver_method = field_name.lower()
+        elif parent_type.name == 'Mutation':
+            prefix = 'resolve_mutation_'
+            resolver_method = field_name.lower()
+        else:
+            prefix = 'resolve_type_'
+            resolver_method = return_type.name.lower()
+
+        return '{prefix}{name}'.format(
+            prefix=prefix,
+            name=resolver_method
+        )
 
     def _load_types(self):
         """Load all the types into the _types property"""
