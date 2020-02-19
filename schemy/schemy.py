@@ -1,12 +1,19 @@
 import inspect
+import os
 
+from aiohttp import web
+from aiohttp_graphql import GraphQLView
+import aiohttp_cors
 from graphql.execution import default_field_resolver
 from graphql.type.definition import get_named_type, GraphQLScalarType
+from dotenv import load_dotenv
 
 #from schemy import Query, Response
 from schemy.graphql import GraphQl
-from schemy.utils import load_modules
 from schemy.types import BaseType
+from schemy.config import Config
+from schemy.helpers import get_root_path, resolve_path, load_type
+from schemy.datasources import Datasource
 
 
 class Schemy:
@@ -14,33 +21,110 @@ class Schemy:
     Basically it loads a graphql schema, process graphql queries that connects
     with resolvers in "Type" classes and returns the response"""
 
-    def __init__(self, sdl_path):
-        self.sdl_path = sdl_path
-        self.types_path = './types'
-        self.datasource = None
-        self.graphql = None
+    # Absolute path location to where to find the .env file
+    # Schemy also tries to look for the filename from the API_DOTENV environment variable
+    dotenv_filename = None
+
+    # Location relative to the root path or absolute to where the config files are
+    config_path = './config'
+
+    # Location relative to the root path or absolute to where the models are
+    models_path = './models'
+
+    # Location relative to the root path or absolute to where the types are
+    types_path = './types'
+
+    # Location relative to the root path or absolute to where the services are
+    services_path = './services'
+
+    # Location relative to the root path or absolute to where the inputs are
+    inputs_path =  './inputs'
+
+    # Location relative to the root path or absolute to where the factories are
+    factories_path = './database/factories'
+
+    # Absolute location of the package in the filesystem
+    root_path = None
+
+    # dict with the default values for the config
+    default_config = {
+        'API_ENV': 'local',             #local|stage|prod
+        'API_PORT': 7777,
+        'API_GRAPHQL_PATH': '/graphql',
+        'API_CORS': False,
+        'API_SCHEMA_FILENAME': './schema.sdl',
+        'DATABASE_CONNECTION': None,
+    }
+
+    # instance to the graphql obj
+    graphql = None
+
+    # Datasource for access the DB
+    datasource = None
+
+    def __init__(self, api_name):
+        """Basically this init resolves all the paths and core variables need it for the
+        execution of the api, the most important to resolve:
+        - The root path based on the api name(basically the name package name)
+        - The .env file
+        - The config files to resolve all the other important paths
+        """
+        self.api_name = api_name
+
+        # Call a helper to get us the root path
+        self.root_path = get_root_path(self.api_name)
+
+        # load variables from dotenv if available
+        self.load_dotenv()
+
+        # load config files
+        self.config = self.load_config()
+
+        # resolving classes paths
+        self.models_path = resolve_path(self.models_path, self.root_path)
+        self.types_path = resolve_path(self.types_path, self.root_path)
+        self.services_path = resolve_path(self.services_path, self.root_path)
+        self.inputs_path = resolve_path(self.inputs_path, self.root_path)
+        self.factories_path = resolve_path(self.factories_path, self.root_path)
+
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
         self._resolver = (lambda s:\
                           lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
                          )(self)
-        self._types = {}
         self.bootstrap()
 
     def bootstrap(self):
-        """Loads default middlewares like logging and extra stuff"""
-        pass
+        """Define directories, middlewares, config and logger"""
+        self.datasource = Datasource(self.config.get('DATABASE_CONNECTION'))
 
-    def build(self, sdl_path: str = None):
+    def load_dotenv(self):
+        """Load the variables from .env if file available
+        """
+        if not self.dotenv_filename:
+            self.dotenv_filename = resolve_path(os.getenv('API_DOTENV', None), self.root_path)
+            if not self.dotenv_filename:
+                #Try to guess the filepath
+                self.dotenv_filename = resolve_path('../.env', self.root_path)
+
+        if os.path.isfile(self.dotenv_filename):
+            load_dotenv(dotenv_path=self.dotenv_filename)   #, override=True
+
+    def load_config(self):
+        """Creates the config obj based on the Config class.
+        It looks for the config files in the config path relative to the root path
+        """
+        config_path = resolve_path(self.config_path, self.root_path)
+
+        return Config(config_path, self.default_config)
+
+    def build(self):
         """Parse and builds a GraphQl Schema File"""
-        path = sdl_path if sdl_path else self.sdl_path
         if not self.graphql:
-            gql = GraphQl(path)
+            sdl_path = resolve_path(self.config.get('API_SCHEMA_FILENAME'), self.root_path)
+            gql = GraphQl(sdl_path)
             gql.build()
             self.graphql = gql
-
-        #pre-load types
-        self._types = self._load_types()
 
         return self
 
@@ -72,6 +156,7 @@ class Schemy:
             ))
             raise Exception('Resolver class does not exist')
 
+		# instantiate class and get method resolver name
         resolver_class_instance = resolver_class(self.datasource)
         resolver_method_name = self._get_resolver_method(
             graphql_type_to_return,
@@ -109,7 +194,9 @@ class Schemy:
             # or I'm a scalar
             resolver_class_name = parent_type.name.lower()
 
-        return self._types[resolver_class_name] if resolver_class_name in self._types else None
+        resolver_class = load_type(os.path.join(self.types_path, resolver_class_name) + '.py')
+
+        return resolver_class if resolver_class else None
 
     def _get_resolver_method(self, return_type, parent_type, field_name):
         """Returns the name of the method to be called in order to resolve the query
@@ -131,18 +218,45 @@ class Schemy:
             name=resolver_method
         )
 
-    def _load_types(self):
-        """Load all the types into the _types property"""
-        types = {}
-        mods = load_modules(self.types_path + '/*.py')
-        for type_ in mods:
-            type_name = type_.__name__.split('.')[-1]
-            for name, object_ in inspect.getmembers(type_, inspect.isclass):
-                if (object_.__name__ != 'BaseType'
-                        and issubclass(object_, BaseType)
-                        and name.lower() == type_name.lower()):
-                    # get just the module name, without the package
-                    key = type_.__name__.split('.')[-1]
-                    types[key] = object_
+    def wsgi_app(self):
+        """This method defines all the necesarry to be called from the wsgi"""
+        self.build()
+        app = web.Application()
 
-        return types
+        # configure route
+        GraphQLView.attach(
+            app,
+            schema=self.schema(),
+            field_resolver=self.get_resolver(),
+            batch=True,
+            graphiql=True
+        )
+
+        return app
+
+    def __call__(self):
+        """The WSGI server calls the Flask application object as the
+        WSGI application."""
+        return self.wsgi_app()
+
+#def get_app():
+
+    #get_route = app.router.add_route('GET', '/graphql', handler, name='graphql')
+    #post_route = app.router.add_route('POST', '/graphql', handler, name='graphql')
+
+    #enable CORS
+    #cors = aiohttp_cors.setup(app, defaults={
+    #    "*": aiohttp_cors.ResourceOptions(
+    #        allow_credentials=True,
+    #        expose_headers=("X-Custom-Server-Header",),
+    #        allow_headers=("X-Requested-With", "Content-Type"),
+    #        max_age=3600,
+    #    )
+    #})
+    #cors.add(get_route)
+    #cors.add(post_route)
+
+    #return app
+
+#if __name__ == '__main__':
+#    web.run_app(get_app(), port=os.getenv('APP_PORT'))
