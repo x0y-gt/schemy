@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from schemy.graphql import GraphQl
 from schemy.types import BaseType
 from schemy.config import Config
+from schemy.logging import create_logger
 from schemy.helpers import get_root_path, resolve_path, load_type
 from schemy.datasources import Datasource
 
@@ -54,6 +55,29 @@ class Schemy:
         'API_CORS': False,
         'API_SCHEMA_FILENAME': './schema.sdl',
         'DATABASE_CONNECTION': None,
+        'LOGGING': {
+			'version': 1,
+			'formatters': {
+				'standard': {
+					'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+				},
+			},
+			'handlers': {
+				'default': {
+					'level': 'INFO',
+					'formatter': 'standard',
+					'class': 'logging.StreamHandler',
+					'stream': 'ext://sys.stdout',
+				},
+			},
+			'loggers': {
+				'api': {  # default logger
+					'handlers': ['default'],
+					'level': 'INFO',
+					'propagate': False
+				},
+			}
+		}
     }
 
     # instance to the graphql obj
@@ -94,10 +118,15 @@ class Schemy:
                          )(self)
         self.bootstrap()
 
+
     def bootstrap(self):
         """Define directories, middlewares, config and logger"""
         if 'DATABASE_CONNECTION' in self.config:
+            # setup datasource using sqlalchemy
             self.datasource = Datasource(self.config.get('DATABASE_CONNECTION'))
+
+        self.logger = create_logger(self.config.get('LOGGING'))
+
 
     def load_dotenv(self):
         """Load the variables from .env if file available
@@ -111,6 +140,7 @@ class Schemy:
         if os.path.isfile(self.dotenv_filename):
             load_dotenv(dotenv_path=self.dotenv_filename)   #, override=True
 
+
     def load_config(self):
         """Creates the config obj based on the Config class.
         It looks for the config files in the config path relative to the root path
@@ -118,6 +148,7 @@ class Schemy:
         config_path = resolve_path(self.config_path, self.root_path)
 
         return Config(config_path, self.default_config)
+
 
     def build(self):
         """Parse and builds a GraphQl Schema File"""
@@ -129,13 +160,12 @@ class Schemy:
 
         return self
 
+
     def schema(self):
         if self.graphql:
             return self.graphql.schema
         return None
 
-    def get_resolver(self):
-        return self._resolver
 
     def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
@@ -152,10 +182,9 @@ class Schemy:
         )
 
         if not resolver_class and not isinstance(graphql_type_to_return, GraphQLScalarType):
-            print('log.warning: resolver class {type_name} not found'.format(
-                type_name=resolver_class.__name__
-            ))
-            raise Exception('Resolver class does not exist')
+            msg = 'resolver class %s not found' % resolver_class.__name__
+            self.logger.warning(msg)
+            raise Exception(msg)
 
 		# instantiate class and get method resolver name
         resolver_class_instance = resolver_class(self.datasource)
@@ -170,19 +199,20 @@ class Schemy:
             if isinstance(graphql_type_to_return, GraphQLScalarType):
                 return default_field_resolver(root, info, **args)
 
-            print('log.warning: resolver {type_name}.{resolver_method} not found'.format(
-                type_name=resolver_class.__name__,
-                resolver_method=resolver_method_name
-            ))
-            raise Exception('Resolver not found')
+            msg = 'resolver method %s.%s not found' % (resolver_class.__name__, resolver_method_name)
+            self.logger.warning(msg)
+            raise Exception(msg)
 
         try:
             query_resolver = getattr(resolver_class_instance, resolver_method_name)
             return query_resolver(root, info, **args)
             #self.datasource.session.commit()
-        except:
-            self.datasource.session.rollback()
+        except e:
+            self.logger.error(e.message, exc_info=True)
+            if self.datasource:
+                self.datasource.session.rollback()
             raise
+
 
     def _get_resolver_class(self, root, return_type, parent_type):
         """Return a Type module if exists, None overwise"""
@@ -198,6 +228,7 @@ class Schemy:
         resolver_class = load_type(os.path.join(self.types_path, resolver_class_name) + '.py')
 
         return resolver_class if resolver_class else None
+
 
     def _get_resolver_method(self, return_type, parent_type, field_name):
         """Returns the name of the method to be called in order to resolve the query
@@ -219,6 +250,7 @@ class Schemy:
             name=resolver_method
         )
 
+
     def wsgi_app(self):
         """This method defines all the necesarry to be called from the wsgi"""
         self.build()
@@ -228,7 +260,7 @@ class Schemy:
         GraphQLView.attach(
             app,
             schema=self.schema(),
-            field_resolver=self.get_resolver(),
+            field_resolver=self._resolver,
             batch=True,
             graphiql=True
         )
@@ -250,6 +282,7 @@ class Schemy:
             #cors.add(post_route)
 
         return app
+
 
     def __call__(self):
         """The WSGI server calls the Flask application object as the
