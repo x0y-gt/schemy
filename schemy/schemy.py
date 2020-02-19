@@ -96,7 +96,8 @@ class Schemy:
 
     def bootstrap(self):
         """Define directories, middlewares, config and logger"""
-        self.datasource = Datasource(self.config.get('DATABASE_CONNECTION'))
+        if 'DATABASE_CONNECTION' in self.config:
+            self.datasource = Datasource(self.config.get('DATABASE_CONNECTION'))
 
     def load_dotenv(self):
         """Load the variables from .env if file available
@@ -232,31 +233,25 @@ class Schemy:
             graphiql=True
         )
 
+        if self.config.get('API_CORS', False):
+            # enable CORS
+            cors = aiohttp_cors.setup(app, defaults={
+                "*": aiohttp_cors.ResourceOptions(
+                    allow_credentials=True,
+                    expose_headers=("X-Custom-Server-Header",),
+                    allow_headers=("X-Requested-With", "Content-Type"),
+                    max_age=3600,
+                )
+            })
+            #get_route = app.router.add_route('GET', '/graphql', handler, name='graphql')
+            #post_route = app.router.add_route('POST', '/graphql', handler, name='graphql')
+
+            #cors.add(get_route)
+            #cors.add(post_route)
+
         return app
 
     def __call__(self):
         """The WSGI server calls the Flask application object as the
         WSGI application."""
         return self.wsgi_app()
-
-#def get_app():
-
-    #get_route = app.router.add_route('GET', '/graphql', handler, name='graphql')
-    #post_route = app.router.add_route('POST', '/graphql', handler, name='graphql')
-
-    #enable CORS
-    #cors = aiohttp_cors.setup(app, defaults={
-    #    "*": aiohttp_cors.ResourceOptions(
-    #        allow_credentials=True,
-    #        expose_headers=("X-Custom-Server-Header",),
-    #        allow_headers=("X-Requested-With", "Content-Type"),
-    #        max_age=3600,
-    #    )
-    #})
-    #cors.add(get_route)
-    #cors.add(post_route)
-
-    #return app
-
-#if __name__ == '__main__':
-#    web.run_app(get_app(), port=os.getenv('APP_PORT'))
