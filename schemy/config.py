@@ -2,19 +2,23 @@ import os
 import inspect
 
 from schemy.utils import Singleton
-from schemy.utils import load_modules
+from schemy.helpers import load_modules
 
 class Config(dict, metaclass=Singleton):
     """Class to load the API configuration"""
+
+    # dict to save the config data
     __data = {}
 
-    def __init__(self, root_pkg):
+    def __init__(self, config_path, defaults: dict = {}):
         """Load all the configuration into the instance"""
         super().__init__()
-        config_dir = os.path.join(root_pkg, 'config')
-        self.__load_config(config_dir)
 
-    def __load_config(self, config_dir):
+        self.__data = defaults
+
+        self.__load_config(config_path)
+
+    def __load_config(self, config_path):
         """This method loads all the configuration files in the config package
         for each module try to load a constant with the modules name
         containing a dict with configuration data, then it adds a prefix for
@@ -25,7 +29,7 @@ class Config(dict, metaclass=Singleton):
         ---
         would convert to:   APP_SECRET
         and save it to its __data class property"""
-        modules = load_modules(config_dir + '/*.py')
+        modules = load_modules(os.path.join(config_path, '*.py'))
         for module in modules:
             config_const_name = inspect.getmodulename(module.__file__).upper()
             if hasattr(module, config_const_name):

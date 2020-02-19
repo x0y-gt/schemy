@@ -1,7 +1,8 @@
 from .schemy import Schemy
-from .type import BaseType
-from .service import BaseService
+from .types import BaseType
+from .services import BaseService
 from .inputs import BaseInput
+
 
 __all__ = [
     'Schemy',

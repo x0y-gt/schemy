@@ -28,3 +28,5 @@ def main(ctx):
             ctx.obj['project_name'] = name
 
     click.echo('Schemy executing...')
+
+#FOr update project name cmd:    replace name in api dir: 'from name' -> 'from newname', 'import name' ->, in build-docker and setup.py, and change in alembic.ini, and change .env's

@@ -1,47 +1,131 @@
 import inspect
+import os
 
+from aiohttp import web
+from aiohttp_graphql import GraphQLView
+import aiohttp_cors
 from graphql.execution import default_field_resolver
 from graphql.type.definition import get_named_type, GraphQLScalarType
+from dotenv import load_dotenv
 
 #from schemy import Query, Response
 from schemy.graphql import GraphQl
-from schemy.utils import load_modules
-from schemy.type import BaseType
+from schemy.types import BaseType
+from schemy.config import Config
+from schemy.helpers import get_root_path, resolve_path, load_type
+from schemy.datasources import Datasource
 
 
-from pprint import pprint
 class Schemy:
     """This is the framework's main class.
     Basically it loads a graphql schema, process graphql queries that connects
     with resolvers in "Type" classes and returns the response"""
 
-    def __init__(self, sdl_path):
-        self.sdl_path = sdl_path
-        self.types_path = './types'
-        self.datasource = None
-        self.graphql = None
+    # Absolute path location to where to find the .env file
+    # Schemy also tries to look for the filename from the API_DOTENV environment variable
+    dotenv_filename = None
+
+    # Location relative to the root path or absolute to where the config files are
+    config_path = './config'
+
+    # Location relative to the root path or absolute to where the models are
+    models_path = './models'
+
+    # Location relative to the root path or absolute to where the types are
+    types_path = './types'
+
+    # Location relative to the root path or absolute to where the services are
+    services_path = './services'
+
+    # Location relative to the root path or absolute to where the inputs are
+    inputs_path =  './inputs'
+
+    # Location relative to the root path or absolute to where the factories are
+    factories_path = './database/factories'
+
+    # Absolute location of the package in the filesystem
+    root_path = None
+
+    # dict with the default values for the config
+    default_config = {
+        'API_ENV': 'local',             #local|stage|prod
+        'API_PORT': 7777,
+        'API_GRAPHQL_PATH': '/graphql',
+        'API_CORS': False,
+        'API_SCHEMA_FILENAME': './schema.sdl',
+        'DATABASE_CONNECTION': None,
+    }
+
+    # instance to the graphql obj
+    graphql = None
+
+    # Datasource for access the DB
+    datasource = None
+
+    def __init__(self, api_name):
+        """Basically this init resolves all the paths and core variables need it for the
+        execution of the api, the most important to resolve:
+        - The root path based on the api name(basically the name package name)
+        - The .env file
+        - The config files to resolve all the other important paths
+        """
+        self.api_name = api_name
+
+        # Call a helper to get us the root path
+        self.root_path = get_root_path(self.api_name)
+
+        # load variables from dotenv if available
+        self.load_dotenv()
+
+        # load config files
+        self.config = self.load_config()
+
+        # resolving classes paths
+        self.models_path = resolve_path(self.models_path, self.root_path)
+        self.types_path = resolve_path(self.types_path, self.root_path)
+        self.services_path = resolve_path(self.services_path, self.root_path)
+        self.inputs_path = resolve_path(self.inputs_path, self.root_path)
+        self.factories_path = resolve_path(self.factories_path, self.root_path)
+
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
         self._resolver = (lambda s:\
                           lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
                          )(self)
-        self._types = {}
         self.bootstrap()
 
     def bootstrap(self):
-        """Loads default middlewares like logging and extra stuff"""
-        pass
+        """Define directories, middlewares, config and logger"""
+        if 'DATABASE_CONNECTION' in self.config:
+            self.datasource = Datasource(self.config.get('DATABASE_CONNECTION'))
 
-    def build(self, sdl_path: str = None):
+    def load_dotenv(self):
+        """Load the variables from .env if file available
+        """
+        if not self.dotenv_filename:
+            self.dotenv_filename = resolve_path(os.getenv('API_DOTENV', None), self.root_path)
+            if not self.dotenv_filename:
+                #Try to guess the filepath
+                self.dotenv_filename = resolve_path('../.env', self.root_path)
+
+        if os.path.isfile(self.dotenv_filename):
+            load_dotenv(dotenv_path=self.dotenv_filename)   #, override=True
+
+    def load_config(self):
+        """Creates the config obj based on the Config class.
+        It looks for the config files in the config path relative to the root path
+        """
+        config_path = resolve_path(self.config_path, self.root_path)
+
+        return Config(config_path, self.default_config)
+
+    def build(self):
         """Parse and builds a GraphQl Schema File"""
-        path = sdl_path if sdl_path else self.sdl_path
         if not self.graphql:
-            gql = GraphQl(path)
+            sdl_path = resolve_path(self.config.get('API_SCHEMA_FILENAME'), self.root_path)
+            gql = GraphQl(sdl_path)
             gql.build()
             self.graphql = gql
-
-        #pre-load types
-        self._types = self._load_types()
 
         return self
 
@@ -57,75 +141,117 @@ class Schemy:
         """This method resolves each field of each type
         If it's a scalar then the default resolver(from the graphql package) is executed,
         if not, we look for a method in our defined types"""
-        return_type = get_named_type(info.return_type)
-        # if return type is scalar then resolve with default resolver
-        if isinstance(return_type, GraphQLScalarType):
-            return default_field_resolver(root, info, **args)
+        graphql_type_to_return = get_named_type(info.return_type)
+        graphql_parent_type = info.parent_type
 
-        # Looking for the type in charge to resolve the query/mutation
-        if info.parent_type.name == 'Query' or info.parent_type.name == 'Mutation':
-            type_name = return_type.name
-        else:
-            type_name = info.parent_type.name
+        #get the class in charge of resolve the current field
+        resolver_class = self._get_resolver_class(
+            not root,
+            graphql_type_to_return,
+            graphql_parent_type
+        )
 
-        type_class = self.get_type(type_name)
-        value = None
-        if type_class:
-            type_instance = type_class(self.datasource)
+        if not resolver_class and not isinstance(graphql_type_to_return, GraphQLScalarType):
+            print('log.warning: resolver class {type_name} not found'.format(
+                type_name=resolver_class.__name__
+            ))
+            raise Exception('Resolver class does not exist')
 
-            # Look for same field name as defined in the Query or Mutation root objects
-            if info.parent_type.name == 'Query':
-                prefix = 'resolve_'
-                field_name = info.field_name.lower()
-            elif info.parent_type.name == 'Mutation':
-                prefix = 'resolve_mutation_'
-                field_name = info.field_name.lower()
-            else:
-                prefix = 'resolve_type_'
-                field_name = return_type.name.lower()
-            field_name = '{prefix}{name}'.format(
-                prefix=prefix,
-                name=field_name
-            )
+		# instantiate class and get method resolver name
+        resolver_class_instance = resolver_class(self.datasource)
+        resolver_method_name = self._get_resolver_method(
+            graphql_type_to_return,
+            graphql_parent_type,
+            info.field_name
+        )
 
-            # find and execute the resolver
-            if hasattr(type_instance, field_name):
-                try:
-                    query_resolver = getattr(type_instance, field_name)
-                    #if info.parent_type.name == 'Query':
-                    #    value = query_resolver(**args)
-                    #else:
-                    value = query_resolver(root, info, **args)
-                    del type_instance
-                    #self.datasource.session.commit()
-                except:
-                    self.datasource.session.rollback()
-                    raise
-            else:
-                print('log.warning: resolver {type_name}.{field_name} not found'.format(
-                    type_name=type_class.__name__,
-                    field_name=field_name
-                ))
+        # find and execute the resolver
+        if not hasattr(resolver_class_instance, resolver_method_name):
+            if isinstance(graphql_type_to_return, GraphQLScalarType):
+                return default_field_resolver(root, info, **args)
 
-        return value
+            print('log.warning: resolver {type_name}.{resolver_method} not found'.format(
+                type_name=resolver_class.__name__,
+                resolver_method=resolver_method_name
+            ))
+            raise Exception('Resolver not found')
 
-    def get_type(self, type_):
+        try:
+            query_resolver = getattr(resolver_class_instance, resolver_method_name)
+            return query_resolver(root, info, **args)
+            #self.datasource.session.commit()
+        except:
+            self.datasource.session.rollback()
+            raise
+
+    def _get_resolver_class(self, root, return_type, parent_type):
         """Return a Type module if exists, None overwise"""
-        type_name = type_.lower()
-        return self._types[type_name] if type_name in self._types else None
 
-    def _load_types(self):
-        """Load all the types into the _types property"""
-        types = {}
-        mods = load_modules(self.types_path + '/*.py')
-        for type_ in mods:
-            type_name = type_.__name__.split('.')[-1]
-            for name, object_ in inspect.getmembers(type_, inspect.isclass):
-                if (object_.__name__ != 'BaseType'
-                        and issubclass(object_, BaseType)
-                        and name.lower() == type_name.lower()):
-                    # get just the module name, without the package
-                    key = type_.__name__.split('.')[-1]
-                    types[key] = object_
+        # Looking for the resolver class in charge to resolve the query/mutation
+        if root and not isinstance(return_type, GraphQLScalarType):
+            resolver_class_name = return_type.name.lower()
+        else:
+            # the one to resolve is always the parent when I'm now quering from the root
+            # or I'm a scalar
+            resolver_class_name = parent_type.name.lower()
 
-        return types
+        resolver_class = load_type(os.path.join(self.types_path, resolver_class_name) + '.py')
+
+        return resolver_class if resolver_class else None
+
+    def _get_resolver_method(self, return_type, parent_type, field_name):
+        """Returns the name of the method to be called in order to resolve the query
+        :returns: string
+        """
+        # Look for same field name as defined in the Query or Mutation root objects
+        if parent_type.name == 'Query' or isinstance(return_type, GraphQLScalarType):
+            prefix = 'resolve_'
+            resolver_method = field_name.lower()
+        elif parent_type.name == 'Mutation':
+            prefix = 'resolve_mutation_'
+            resolver_method = field_name.lower()
+        else:
+            prefix = 'resolve_type_'
+            resolver_method = return_type.name.lower()
+
+        return '{prefix}{name}'.format(
+            prefix=prefix,
+            name=resolver_method
+        )
+
+    def wsgi_app(self):
+        """This method defines all the necesarry to be called from the wsgi"""
+        self.build()
+        app = web.Application()
+
+        # configure route
+        GraphQLView.attach(
+            app,
+            schema=self.schema(),
+            field_resolver=self.get_resolver(),
+            batch=True,
+            graphiql=True
+        )
+
+        if self.config.get('API_CORS', False):
+            # enable CORS
+            cors = aiohttp_cors.setup(app, defaults={
+                "*": aiohttp_cors.ResourceOptions(
+                    allow_credentials=True,
+                    expose_headers=("X-Custom-Server-Header",),
+                    allow_headers=("X-Requested-With", "Content-Type"),
+                    max_age=3600,
+                )
+            })
+            #get_route = app.router.add_route('GET', '/graphql', handler, name='graphql')
+            #post_route = app.router.add_route('POST', '/graphql', handler, name='graphql')
+
+            #cors.add(get_route)
+            #cors.add(post_route)
+
+        return app
+
+    def __call__(self):
+        """The WSGI server calls the Flask application object as the
+        WSGI application."""
+        return self.wsgi_app()

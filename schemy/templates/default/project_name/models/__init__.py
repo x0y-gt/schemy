@@ -3,7 +3,7 @@ import inspect
 from sqlalchemy.ext.declarative import declarative_base
 import {project_name}.config as config
 
-from schemy.datasource import Datasource
+from schemy.datasources import Datasource
 from schemy.utils import load_modules
 
 __all__ = [
