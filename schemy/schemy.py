@@ -69,6 +69,22 @@ class Schemy:
 					'class': 'logging.StreamHandler',
 					'stream': 'ext://sys.stdout',
 				},
+				'file': {
+					'class': 'logging.handlers.RotatingFileHandler',
+					'level': 'INFO',
+					'formatter': 'standard',
+					'filename': './logs/api.log',
+					'mode': 'a',
+					'maxBytes': 1024*1024*25, # 25MB,
+					'backupCount': 5,
+				},
+				'slack': {
+					'class': 'slack_logger.SlackHandler',
+					'level': 'ERROR',
+					'formatter': 'standard',
+					'url': os.getenv('SLACK_WEBHOOK', None),
+					'username':'Logger',
+				},
 			},
 			'loggers': {
 				'api': {  # default logger
@@ -207,7 +223,7 @@ class Schemy:
             query_resolver = getattr(resolver_class_instance, resolver_method_name)
             return query_resolver(root, info, **args)
             #self.datasource.session.commit()
-        except e:
+        except Exception as e:
             self.logger.error(e.message, exc_info=True)
             if self.datasource:
                 self.datasource.session.rollback()
