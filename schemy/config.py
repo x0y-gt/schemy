@@ -35,9 +35,13 @@ class Config(dict, metaclass=Singleton):
             if hasattr(module, config_const_name):
                 data = getattr(module, config_const_name)
                 prefix = config_const_name + '_'
-                self.__data.update(
-                    {prefix + k: v for (k, v) in data.items()}
-                )
+                if prefix != 'LOGGING_':
+                    self.__data.update(
+                        {prefix + k: v for (k, v) in data.items()}
+                    )
+                else:
+                    self.__data['LOGGING'] = data
+
 
     def __getitem__(self, key):
         return self.__data[key]
