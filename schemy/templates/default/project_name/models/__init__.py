@@ -1,21 +1,16 @@
 import inspect
 
-from sqlalchemy.ext.declarative import declarative_base
-import {project_name}.config as config
+from schemy.datasources import BaseModel as Base
+from schemy.helpers import load_modules
 
-from schemy.datasources import Datasource
-from schemy.utils import load_modules
+from customers.app import api
 
 __all__ = [
-    'datasource',
     'Base',
 ]
 
-datasource = Datasource(config.get('DATABASE_CONNECTION'))
-Base = declarative_base() #(cls=DeferredReflection)
-
 def load_models():
-    modules = load_modules(config.get('APP_MODELS_DIR') + '/*.py')
+    modules = load_modules(api.models_path + '/*.py')
     for module in modules:
         #Getting the module objects to get the Model Class
         for _name, object_ in inspect.getmembers(module, inspect.isclass):
