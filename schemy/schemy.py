@@ -1,5 +1,6 @@
 import inspect
 import os
+import asyncio
 
 from aiohttp import web
 from aiohttp_graphql import GraphQLView
@@ -57,6 +58,7 @@ class Schemy:
         'DATABASE_CONNECTION': None,
         'LOGGING': {
 			'version': 1,
+            'disable_existing_loggers': False,
 			'formatters': {
 				'standard': {
 					'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -64,7 +66,7 @@ class Schemy:
 			},
 			'handlers': {
 				'default': {
-					'level': 'INFO',
+					'level': 'DEBUG',
 					'formatter': 'standard',
 					'class': 'logging.StreamHandler',
 					'stream': 'ext://sys.stdout',
@@ -89,7 +91,7 @@ class Schemy:
 			'loggers': {
 				'api': {  # default logger
 					'handlers': ['default'],
-					'level': 'INFO',
+					'level': 'DEBUG',
 					'propagate': False
 				},
 			}
@@ -178,12 +180,13 @@ class Schemy:
 
 
     def schema(self):
+        """return the instance of the graqhql schema"""
         if self.graphql:
             return self.graphql.schema
         return None
 
 
-    def resolve_type(self, root, info, **args):
+    async def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
         If it's a scalar then the default resolver(from the graphql package) is executed,
         if not, we look for a method in our defined types"""
@@ -215,16 +218,25 @@ class Schemy:
             if isinstance(graphql_type_to_return, GraphQLScalarType):
                 return default_field_resolver(root, info, **args)
 
-            msg = 'resolver method %s.%s not found' % (resolver_class.__name__, resolver_method_name)
+            msg = 'resolver method %s.%s not found' % (
+                resolver_class.__name__,
+                resolver_method_name
+            )
             self.logger.warning(msg)
             raise Exception(msg)
 
         try:
             query_resolver = getattr(resolver_class_instance, resolver_method_name)
-            return query_resolver(root, info, **args)
+            if asyncio.iscoroutinefunction(query_resolver):
+                respose = await query_resolver(root, info, **args)
+            else:
+                respose = query_resolver(root, info, **args)
+
+            del resolver_class_instance
+            return respose
             #self.datasource.session.commit()
         except Exception as e:
-            self.logger.error(e.message, exc_info=True)
+            self.logger.error(str(e), exc_info=True)
             if self.datasource:
                 self.datasource.session.rollback()
             raise
