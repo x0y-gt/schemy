@@ -40,7 +40,7 @@ class Schemy:
     services_path = './services'
 
     # Location relative to the root path or absolute to where the inputs are
-    inputs_path =  './inputs'
+    inputs_path = './inputs'
 
     # Location relative to the root path or absolute to where the factories are
     factories_path = './database/factories'
@@ -57,45 +57,45 @@ class Schemy:
         'API_SCHEMA_FILENAME': './schema.sdl',
         'DATABASE_CONNECTION': None,
         'LOGGING': {
-			'version': 1,
+            'version': 1,
             'disable_existing_loggers': False,
-			'formatters': {
-				'standard': {
-					'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-				},
-			},
-			'handlers': {
-				'default': {
-					'level': 'DEBUG',
-					'formatter': 'standard',
-					'class': 'logging.StreamHandler',
-					'stream': 'ext://sys.stdout',
-				},
-				'file': {
-					'class': 'logging.handlers.RotatingFileHandler',
-					'level': 'INFO',
-					'formatter': 'standard',
-					'filename': './logs/api.log',
-					'mode': 'a',
-					'maxBytes': 1024*1024*25, # 25MB,
-					'backupCount': 5,
-				},
-				'slack': {
-					'class': 'slack_logger.SlackHandler',
-					'level': 'ERROR',
-					'formatter': 'standard',
-					'url': os.getenv('SLACK_WEBHOOK', None),
-					'username':'Logger',
-				},
-			},
-			'loggers': {
-				'api': {  # default logger
-					'handlers': ['default'],
-					'level': 'DEBUG',
-					'propagate': False
-				},
-			}
-		}
+            'formatters': {
+                'standard': {
+                    'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+            },
+            'handlers': {
+                'default': {
+                    'level': 'DEBUG',
+                    'formatter': 'standard',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stdout',
+                },
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'level': 'INFO',
+                    'formatter': 'standard',
+                    'filename': './logs/api.log',
+                    'mode': 'a',
+                    'maxBytes': 1024*1024*25, # 25MB,
+                    'backupCount': 5,
+                },
+                'slack': {
+                    'class': 'slack_logger.SlackHandler',
+                    'level': 'ERROR',
+                    'formatter': 'standard',
+                    'url': os.getenv('SLACK_WEBHOOK', None),
+                    'username':'Logger',
+                },
+            },
+            'loggers': {
+                'api': {  # default logger
+                    'handlers': ['default'],
+                    'level': 'DEBUG',
+                    'propagate': False
+                },
+            }
+        }
     }
 
     # instance to the graphql obj
