@@ -38,8 +38,8 @@ class HttpClient:
         elif base[-1] == '/' and path[0] == '/':
             url = base + path[1:]
         elif base[-1] == '/' or path[0] == '/':
-            url = base + path[0]
+            url = base + path
         else:
-            url = base + '/' + path[0]
+            url = base + '/' + path
 
         return url
