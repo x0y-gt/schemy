@@ -1,9 +1,11 @@
+import json
+
 import aiohttp
 
 from .http import HttpTransport
 
-
 MAIL_GUN_API = 'https://api.mailgun.net/v3/'
+
 
 class MailGunTransport(HttpTransport):
     """Transport to make request to mailgun using their API"""
@@ -14,4 +16,8 @@ class MailGunTransport(HttpTransport):
 
     async def send(self, message):
         response = await super().send(message)
-        return await response.text()
+        payload = await response.text()
+        if response.status == 200:
+            return json.loads(payload)
+
+        return payload
