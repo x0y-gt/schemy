@@ -1,5 +1,6 @@
 import inspect
 import os
+import asyncio
 
 from aiohttp import web
 from aiohttp_graphql import GraphQLView
@@ -39,7 +40,7 @@ class Schemy:
     services_path = './services'
 
     # Location relative to the root path or absolute to where the inputs are
-    inputs_path =  './inputs'
+    inputs_path = './inputs'
 
     # Location relative to the root path or absolute to where the factories are
     factories_path = './database/factories'
@@ -56,44 +57,45 @@ class Schemy:
         'API_SCHEMA_FILENAME': './schema.sdl',
         'DATABASE_CONNECTION': None,
         'LOGGING': {
-			'version': 1,
-			'formatters': {
-				'standard': {
-					'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-				},
-			},
-			'handlers': {
-				'default': {
-					'level': 'INFO',
-					'formatter': 'standard',
-					'class': 'logging.StreamHandler',
-					'stream': 'ext://sys.stdout',
-				},
-				'file': {
-					'class': 'logging.handlers.RotatingFileHandler',
-					'level': 'INFO',
-					'formatter': 'standard',
-					'filename': './logs/api.log',
-					'mode': 'a',
-					'maxBytes': 1024*1024*25, # 25MB,
-					'backupCount': 5,
-				},
-				'slack': {
-					'class': 'slack_logger.SlackHandler',
-					'level': 'ERROR',
-					'formatter': 'standard',
-					'url': os.getenv('SLACK_WEBHOOK', None),
-					'username':'Logger',
-				},
-			},
-			'loggers': {
-				'api': {  # default logger
-					'handlers': ['default'],
-					'level': 'INFO',
-					'propagate': False
-				},
-			}
-		}
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {
+                'standard': {
+                    'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+            },
+            'handlers': {
+                'default': {
+                    'level': 'DEBUG',
+                    'formatter': 'standard',
+                    'class': 'logging.StreamHandler',
+                    'stream': 'ext://sys.stdout',
+                },
+                'file': {
+                    'class': 'logging.handlers.RotatingFileHandler',
+                    'level': 'INFO',
+                    'formatter': 'standard',
+                    'filename': './logs/api.log',
+                    'mode': 'a',
+                    'maxBytes': 1024*1024*25, # 25MB,
+                    'backupCount': 5,
+                },
+                'slack': {
+                    'class': 'slack_logger.SlackHandler',
+                    'level': 'ERROR',
+                    'formatter': 'standard',
+                    'url': os.getenv('SLACK_WEBHOOK', None),
+                    'username':'Logger',
+                },
+            },
+            'loggers': {
+                'api': {  # default logger
+                    'handlers': ['default'],
+                    'level': 'DEBUG',
+                    'propagate': False
+                },
+            }
+        }
     }
 
     # instance to the graphql obj
@@ -178,12 +180,13 @@ class Schemy:
 
 
     def schema(self):
+        """return the instance of the graqhql schema"""
         if self.graphql:
             return self.graphql.schema
         return None
 
 
-    def resolve_type(self, root, info, **args):
+    async def resolve_type(self, root, info, **args):
         """This method resolves each field of each type
         If it's a scalar then the default resolver(from the graphql package) is executed,
         if not, we look for a method in our defined types"""
@@ -215,16 +218,25 @@ class Schemy:
             if isinstance(graphql_type_to_return, GraphQLScalarType):
                 return default_field_resolver(root, info, **args)
 
-            msg = 'resolver method %s.%s not found' % (resolver_class.__name__, resolver_method_name)
+            msg = 'resolver method %s.%s not found' % (
+                resolver_class.__name__,
+                resolver_method_name
+            )
             self.logger.warning(msg)
             raise Exception(msg)
 
         try:
             query_resolver = getattr(resolver_class_instance, resolver_method_name)
-            return query_resolver(root, info, **args)
+            if asyncio.iscoroutinefunction(query_resolver):
+                respose = await query_resolver(root, info, **args)
+            else:
+                respose = query_resolver(root, info, **args)
+
+            del resolver_class_instance
+            return respose
             #self.datasource.session.commit()
         except Exception as e:
-            self.logger.error(e.message, exc_info=True)
+            self.logger.error(str(e), exc_info=True)
             if self.datasource:
                 self.datasource.session.rollback()
             raise
