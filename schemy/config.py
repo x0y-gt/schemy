@@ -40,7 +40,7 @@ class Config(dict, metaclass=Singleton):
                         {prefix + k: v for (k, v) in data.items()}
                     )
                 else:
-                    self.__data['LOGGING'] = data
+                    self.__data['LOGGING'] = {**self.__data['LOGGING'], **data}
 
 
     def __getitem__(self, key):
