@@ -218,7 +218,6 @@ class Schemy:
             if is_leaf_type(graphql_type_to_return):
                 return default_field_resolver(root, info, **args)
 
-            print(root, info, flush=True)
             msg = 'resolver method %s.%s not found' % (
                 resolver_class.__name__,
                 resolver_method_name
