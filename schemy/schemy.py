@@ -6,7 +6,7 @@ from aiohttp import web
 from aiohttp_graphql import GraphQLView
 import aiohttp_cors
 from graphql.execution import default_field_resolver
-from graphql.type.definition import get_named_type, GraphQLScalarType
+from graphql.type.definition import get_named_type, is_leaf_type
 from dotenv import load_dotenv
 
 #from schemy import Query, Response
@@ -200,7 +200,7 @@ class Schemy:
             graphql_parent_type
         )
 
-        if not resolver_class and not isinstance(graphql_type_to_return, GraphQLScalarType):
+        if not resolver_class and not is_leaf_type(graphql_type_to_return):
             msg = 'resolver class %s not found' % resolver_class.__name__
             self.logger.warning(msg)
             raise Exception(msg)
@@ -215,7 +215,7 @@ class Schemy:
 
         # find and execute the resolver
         if not hasattr(resolver_class_instance, resolver_method_name):
-            if isinstance(graphql_type_to_return, GraphQLScalarType):
+            if is_leaf_type(graphql_type_to_return):
                 return default_field_resolver(root, info, **args)
 
             msg = 'resolver method %s.%s not found' % (
@@ -246,7 +246,7 @@ class Schemy:
         """Return a Type module if exists, None overwise"""
 
         # Looking for the resolver class in charge to resolve the query/mutation
-        if root and not isinstance(return_type, GraphQLScalarType):
+        if root and not is_leaf_type(return_type):
             resolver_class_name = return_type.name.lower()
         else:
             # the one to resolve is always the parent when I'm now quering from the root
@@ -263,7 +263,7 @@ class Schemy:
         :returns: string
         """
         # Look for same field name as defined in the Query or Mutation root objects
-        if parent_type.name == 'Query' or isinstance(return_type, GraphQLScalarType):
+        if parent_type.name == 'Query' or is_leaf_type(return_type):
             prefix = 'resolve_'
             resolver_method = field_name.lower()
         elif parent_type.name == 'Mutation':

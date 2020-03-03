@@ -20,7 +20,7 @@ class SAModel(BaseDatasource):
         super(SAModel, self).__init__(name)
         self.imports = [
             'import datetime',
-            'from PACKAGE_NAME.model import Base',
+            'from PACKAGE_NAME.models import Base',
         ]
 
     def render(self, package_name='api'):
