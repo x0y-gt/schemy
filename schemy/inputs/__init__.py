@@ -1,5 +1,6 @@
-from .baseinput import BaseInput
+from .baseinput import BaseInput, validate
 
 __all__ = [
-    'BaseInput'
+    'BaseInput',
+    'validate',
 ]
