@@ -8,6 +8,13 @@ __all__ = ['BaseInput']
 LOGGER = 'api'
 
 
+def validate(data, rules, raise_if_error=True):
+    """Validates data againt spotlight rules validator
+    :returns: errors if any
+    """
+    return Validator().validate(data, rules)
+
+
 class BaseInput(object):
     """This abstract class is the parent of the inputs's classes"""
 
@@ -40,7 +47,7 @@ class BaseInput(object):
                      for k, v in self.RULES.items()
                      if not inspect.isclass(v)
                         and not isinstance(v, list)}
-            errors = Validator().validate(self._input, rules)
+            errors = validate(self._input, rules)
             for field_name, input_class in dependencies.items():
                 #can be a list or another input class
                 if isinstance(input_class, list):
