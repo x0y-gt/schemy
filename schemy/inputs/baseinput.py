@@ -1,7 +1,11 @@
 import inspect
+import logging
+
 from spotlight.validator import Validator
 
 __all__ = ['BaseInput']
+
+LOGGER = 'api'
 
 
 class BaseInput(object):
@@ -40,6 +44,7 @@ class BaseInput(object):
             for field_name, input_class in dependencies.items():
                 #can be a list or another input class
                 if isinstance(input_class, list):
+                    #TODO: allow multiple types
                     input_class = input_class[0]
                     new_list = []
                     for value in self._input[field_name]:
@@ -52,8 +57,7 @@ class BaseInput(object):
                     self._input[field_name] = input_instance
                     errors = {**errors, **input_instance.validate()}
         else:
-            # log this!
-            print('No rules defined for input {}'.format(__name__))
+            logging.getLogger(LOGGER).error('No rules defined for input {}'.format(__name__))
 
         return errors
 
