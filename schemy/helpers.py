@@ -11,7 +11,14 @@ __all__ = [
 	'resolve_path',
 	'load_modules',
 	'load_module',
+	'intersec',
 ]
+
+
+def intersec(defaults, dic):
+    """Merges two dictionaries, the intention is to override the defaults"""
+    new_dict = {**defaults, **dict(dic)}
+    return {k:new_dict[k] for k in new_dict if k in defaults}
 
 
 def get_root_path(import_name):
