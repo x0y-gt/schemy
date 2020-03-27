@@ -263,7 +263,10 @@ class Schemy:
         :returns: string
         """
         # Look for same field name as defined in the Query or Mutation root objects
-        if parent_type.name == 'Query' or is_leaf_type(return_type):
+        if is_leaf_type(return_type):
+            prefix = 'resolve_field_'
+            resolver_method = field_name.lower()
+        elif parent_type.name == 'Query':
             prefix = 'resolve_'
             resolver_method = field_name.lower()
         elif parent_type.name == 'Mutation':
