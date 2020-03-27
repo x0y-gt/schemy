@@ -47,7 +47,13 @@ class BaseInput(object):
                      for k, v in self.RULES.items()
                      if not inspect.isclass(v)
                         and not isinstance(v, list)}
-            errors = validate(self._input, rules)
+
+            if isinstance(self._input, list):
+                for item in self._input:
+                    errors = {**errors, **dict(validate(item, rules))}
+            else:
+                errors = validate(self._input, rules)
+
             for field_name, input_class in dependencies.items():
                 #can be a list or another input class
                 if isinstance(input_class, list):
