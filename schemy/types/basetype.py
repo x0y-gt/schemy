@@ -11,7 +11,9 @@ class BaseType(ABC):
         instance = super(BaseType, cls).__new__(cls, *args, **kwargs)
         if hasattr(instance, 'DATASOURCE'):
             instance._session = datasource.session
-            instance._query = datasource.session.query(instance.DATASOURCE)
+            instance._query = None
+            if (instance.DATASOURCE):
+                instance._query = datasource.session.query(instance.DATASOURCE)
         return instance
 
     def query(self):
