@@ -12,7 +12,9 @@ class BaseService(ABC):
         instance = super(BaseService, cls).__new__(cls, *args, **kwargs)
         if hasattr(instance, 'DATASOURCE'):
             instance._session = Datasource().session
-            instance._query = Datasource().session.query(instance.DATASOURCE)
+            instance._query = None
+            if (instance.DATASOURCE):
+                instance._query = Datasource().session.query(instance.DATASOURCE)
         return instance
 
     def query(self):
