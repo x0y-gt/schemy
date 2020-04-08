@@ -131,9 +131,9 @@ class Schemy:
 
         # define the resolver func as a lambda to have a reference to self
         # so we can have an easy access to the defined types
-        self._resolver = (lambda s:\
-                          lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
-                         )(self)
+        #self._resolver = (lambda s:\
+        #                  lambda root, info, **args: s.resolve_type(root, info, **args) #pylint: disable=unnecessary-lambda
+        #                 )(self)
         self.bootstrap()
 
 
@@ -280,6 +280,11 @@ class Schemy:
             prefix=prefix,
             name=resolver_method
         )
+
+
+    async def _resolver(self, root, info, **args):
+        """Async resolver wrapper"""
+        return await self.resolve_type(root, info, **args)
 
 
     def wsgi_app(self):
