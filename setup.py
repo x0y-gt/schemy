@@ -19,7 +19,6 @@ setup(name='schemy',
           ]
       },
       install_requires=[
-          'asyncio',
           'aiohttp==4.0.0a',
           'aiohttp-cors==0.7.0',
           'Click==7.0',
