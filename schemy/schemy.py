@@ -117,7 +117,7 @@ class Schemy:
         self.root_path = get_root_path(self.api_name)
 
         # load variables from dotenv if available
-        self.load_dotenv()
+        self._load_dotenv()
 
         # load config files
         self.config = self.load_config()
@@ -146,7 +146,7 @@ class Schemy:
         self.logger = create_logger(self.config.get('LOGGING'))
 
 
-    def load_dotenv(self):
+    def _load_dotenv(self):
         """Load the variables from .env if file available
         """
         if not self.dotenv_filename:
